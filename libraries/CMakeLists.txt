@@ -1,0 +1,8 @@
+add_subdirectory(Domains)
+add_subdirectory(FileIO)
+add_subdirectory(Learning)
+add_subdirectory(Math)
+add_subdirectory(Multiagent)
+add_subdirectory(Planning)
+add_subdirectory(Simulation)
+add_subdirectory(STL)
