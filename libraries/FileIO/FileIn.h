@@ -264,9 +264,9 @@ namespace cio {
   //! Read in pair type objects
   template<typename T>
   std::vector<T> readPairs(std::string file_name, std::string separator = STRING_UNINITIALIZED) {
-    std::vector<std::vector<int> >  m = read2<int>(file_name, separator);
+    std::vector<std::vector<double> >  m = read2<double>(file_name, separator);
     std::vector<T> var;
-    for (std::vector<int> i : m) {
+    for (std::vector<double> i : m) {
       if (i.size() != 2) {
         throw NOT_PAIR;
       } else {
