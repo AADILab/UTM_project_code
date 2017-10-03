@@ -4,6 +4,7 @@
 
 
 // STL includes
+#include <iostream>
 #include <vector>
 
 // Library includes

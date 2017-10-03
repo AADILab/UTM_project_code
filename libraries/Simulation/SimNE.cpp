@@ -139,7 +139,7 @@ SimNE::SimHistory SimNE::simGlobal() {
   do {
     matrix2d S = domain->getStates();
     matrix2d A = this->getActions(S);
-
+    
     double g = domain->simulateStep(A);
     matrix1d extra = domain->getExtraInfo();
     SH.addState(S,T->step);
@@ -197,6 +197,7 @@ void SimNE::epoch() {
 		  G = easymath::sum(SH.G);
 		  R = domain->getRewards();
 	  }
+	  
     //G = -G;
     //R = matrix1d(R.size(), 0.0) - R; ????
 

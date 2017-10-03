@@ -143,6 +143,6 @@ bool LinkGraph::intersects_existing_edge(edge candidate) {
 size_t LinkGraph::get_direction(size_t m1, size_t m2) const {
   XY a = get_vertex_loc(m1);
   XY b = get_vertex_loc(m2);
-  return cardinal_direction(a - b);
+  return cardinal_direction(b - a);
 }
 

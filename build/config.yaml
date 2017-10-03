@@ -5,7 +5,7 @@ modes:
  traffic: deterministic     # deterministic, probabilistic, constant
  prob_record: false         # true, false
  position: random           # random, constant
- agent: link                # sector, link
+ agent: sector              # sector, link
  search: astar              # astar, rags, quick
  square: false              # true, false
  objective: travel_time     # delay, conflicts, travel_time
@@ -30,8 +30,8 @@ neuroevo:
   layers: 1
   sigmoid_output: true
   hidden: 20
-  input: 1
-  output: 1
+  input: 4                  # if {agent: sector, input: 4}, else if {agent: link, input: 1}
+  output: 4                 # if {agent: sector, output: 4}, else if {agent: link, output: 1}
 
 approximator:
  nn:

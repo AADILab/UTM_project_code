@@ -106,6 +106,73 @@ UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, std::string costmode, b
   k_generation_mode_ = configs["modes"]["generation"].as<string>();
   k_destination_mode_ = configs["modes"]["destination"].as<string>();
 
+  // Sector
+  if (k_generation_mode_ == "all") { // Generate UAVs at all sectors
+    for (size_t i = 0; i < locs.size(); i++) {
+      generation_sectors.push_back(i);
+    }
+  } else { // Generate UAVs only at select sectors
+    auto genfile = cio::read2<size_t>(domain_dir + "generation_points.csv");
+    for (size_t i = 0; i < genfile.size(); i++) {
+      generation_sectors.push_back(genfile[i][0]);
+    }
+  }
+
+  if (k_destination_mode_ == "all") { // UAVs assigned goal to any sector
+    for (size_t i = 0; i < locs.size(); i++) {
+      destination_sectors.push_back(i);
+    }
+  } else { // UAVs assigned goal to select sectors
+    auto destfile = cio::read2<size_t>(domain_dir + "destination_points.csv");
+    for (size_t i = 0; i < destfile.size(); i++) {
+      destination_sectors.push_back(destfile[i][0]);
+    }
+  }
+  
+  // Sector/Fix  construction
+  uav_count = 0;
+  vector<vector<size_t> > connections(k_num_sectors_);
+  for (edge e : edges)
+    connections[e.first].push_back(e.second);
+
+  vector<XY> sector_locs = high_graph_->get_locations();
+  for (size_t i = 0; i < k_num_sectors_; i++) {
+    // Only include non-self as destination
+    //vector<size_t> dest_IDs(destination_sectors.size()-1);
+	  vector<size_t> dest_IDs;
+    for (size_t j = 0; j < destination_sectors.size(); j++) {
+        if (destination_sectors[j] == i) continue;
+        dest_IDs.push_back(destination_sectors[j]);
+    }
+
+    Sector* s = new Sector(sector_locs[i], i, connections[i], sector_locs, configs, i, high_graph_, dest_IDs);
+    sectors_.push_back(s);
+
+    /* Following code is for UAV playback implemented by Brandon. Not necessary for what experiments
+    I did, but here it is in case it's useful later */
+
+    // Give new sector pointer to SimTime
+    sectors_[sectors_.size() - 1]->T = T;
+    if (configs["modes"]["traffic"].as<string>() == "playback")
+	    // Give new sector the path to the domain directory
+	    sectors_[sectors_.size() - 1]->domain_dir = UTMFileNames::createDomainDirectory(configs);
+  }
+  
+  // not used?
+  trafficGenerated = matrix2d(k_num_sectors_, matrix1d(k_num_sectors_, 0.0));
+
+  k_position_mode_ = configs["modes"]["position"].as<string>();
+  if (k_position_mode_ == "constant") {
+    // Create uavs_ on links_
+    string pose_file = domain_dir + "initial_pose.csv";
+    poses = cio::read2<int>(pose_file);
+
+    for (size_t i = 0; i < poses.size(); i++) {
+      // only reset count on the first one
+      getNewUavTraffic(poses[i][0]);
+    }
+  }
+
   /* Generate sector/link agents */
   if (k_agent_mode_ == "sector") {
     agents_ = new SectorAgent(links_, sectors_, k_num_states_);
@@ -155,29 +222,6 @@ UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, std::string costmode, b
     }
   }
 
-  // Sector
-  if (k_generation_mode_ == "all") { // Generate UAVs at all sectors
-    for (size_t i = 0; i < locs.size(); i++) {
-      generation_sectors.push_back(i);
-    }
-  } else { // Generate UAVs only at select sectors
-    auto genfile = cio::read2<size_t>(domain_dir + "generation_points.csv");
-    for (size_t i = 0; i < genfile.size(); i++) {
-      generation_sectors.push_back(genfile[i][0]);
-    }
-  }
-
-  if (k_destination_mode_ == "all") { // UAVs assigned goal to any sector
-    for (size_t i = 0; i < locs.size(); i++) {
-      destination_sectors.push_back(i);
-    }
-  } else { // UAVs assigned goal to select sectors
-    auto destfile = cio::read2<size_t>(domain_dir + "destination_points.csv");
-    for (size_t i = 0; i < destfile.size(); i++) {
-      destination_sectors.push_back(destfile[i][0]);
-    }
-  }
-
 	if (tracking){ // If tracking enabled, record all link traversal times and capacities
 	  for (auto l : links_) {
 		  tracker->edgeTimes.push_back(l->get_time());
@@ -193,7 +237,7 @@ void UTMDomainAbstract::addLink(UTMDomainAbstract::edge e, double flat_capacity)
   XY s_loc = locs[source];
   XY t_loc = locs[target];
 
-  size_t cardinal_dir = cardinal_direction(s_loc - t_loc);
+  size_t cardinal_dir = cardinal_direction(t_loc - s_loc);
   size_t dist = static_cast<size_t>(euclidean_distance(s_loc, t_loc));
   if (dist == 0)
     dist = 1;
@@ -213,53 +257,7 @@ void UTMDomainAbstract::generateNewAirspace(string domain_dir, size_t xdim, size
 }
 
 UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, string costmode) :
-  UTMDomainAbstract(configs, costmode, true) {
-  // Sector/Fix  construction
-  uav_count = 0;
-  vector<edge> edges = high_graph_->get_edges();
-  vector<vector<size_t> > connections(k_num_sectors_);
-  for (edge e : edges)
-    connections[e.first].push_back(e.second);
-
-  vector<XY> sector_locs = high_graph_->get_locations();
-  for (size_t i = 0; i < k_num_sectors_; i++) {
-    // Only include non-self as destination
-    //vector<size_t> dest_IDs(destination_sectors.size()-1);
-	  vector<size_t> dest_IDs;
-    for (size_t j = 0; j < destination_sectors.size(); j++) {
-        if (destination_sectors[j] == i) continue;
-        dest_IDs.push_back(destination_sectors[j]);
-    }
-
-    Sector* s = new Sector(sector_locs[i], i, connections[i], sector_locs, configs, i, high_graph_, dest_IDs);
-    sectors_.push_back(s);
-
-    /* Following code is for UAV playback implemented by Brandon. Not necessary for what experiments
-    I did, but here it is in case it's useful later */
-
-    // Give new sector pointer to SimTime
-    sectors_[sectors_.size() - 1]->T = T;
-    if (configs["modes"]["traffic"].as<string>() == "playback")
-	    // Give new sector the path to the domain directory
-	    sectors_[sectors_.size() - 1]->domain_dir = UTMFileNames::createDomainDirectory(configs);
-  }
-  
-  // not used?
-  trafficGenerated = matrix2d(k_num_sectors_, matrix1d(k_num_sectors_, 0.0));
-
-  string domain_dir = "Domains/" + to_string(k_num_sectors_) + "_Sectors/";
-  k_position_mode_ = configs["modes"]["position"].as<string>();
-  if (k_position_mode_ == "constant") {
-    // Create uavs_ on links_
-    string pose_file = domain_dir + "initial_pose.csv";
-    poses = cio::read2<int>(pose_file);
-
-    for (size_t i = 0; i < poses.size(); i++) {
-      // only reset count on the first one
-      getNewUavTraffic(poses[i][0]);
-    }
-  }
-}
+  UTMDomainAbstract(configs, costmode, true) {}
 
 // Destructor
 UTMDomainAbstract::~UTMDomainAbstract(void) {
@@ -382,7 +380,7 @@ double UTMDomainAbstract::simulateStep(matrix2d agent_actions) {
       }
     }
   }
-    
+  
   // ACTUAL calculation of impactfulness
   /* for (int i = 0; i < agent_actions.size(); i++) {
     matrix2d aa = agent_actions;

@@ -71,6 +71,7 @@ void abstractUtmSimulation(std::string fitness) {
       }
     }
 		sim.runExperiment();
+	  print_nets(MAS, r);
 		
 		// Output performance, one file for each run
 		std::string metrics_dir = domain->getOutputMetricsDirectory() ;

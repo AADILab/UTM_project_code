@@ -92,6 +92,7 @@ class Sector {
     }
 
     size_t generateUavs(size_t step, size_t *uavs_generated) {
+//      std::cout << "Creating new UAVs in the world...\n" ;
       // Creates new UAVs in the world
       std::vector<UAV*> uavs = std::vector<UAV*>();
 		  // This first if/else block is for "playing back" a particular pattern of UAV generation
@@ -139,7 +140,7 @@ class Sector {
 
     size_t selectDestinationID() {
       size_t num_destinations = k_destination_IDs_.size();
-
+      
       if (k_destination_mode_ == "static") {
         destination_index++;
         if (destination_index >= num_destinations) {
