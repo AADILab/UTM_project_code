@@ -13,3 +13,9 @@ set( LIBS_TO_LINK Domains FileIO Learning Math Multiagent Planning Simulation ST
 
 add_executable(AbstractUTMSimulation AbstractUTMSimulation.cpp)
 target_link_libraries( AbstractUTMSimulation ${LIBS_TO_LINK} )
+
+# Copy configuration and domain description files
+# to the "installation" (currently build) directory
+file(COPY config.yaml DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY Domains DESTINATION ${CMAKE_BINARY_DIR})
+
