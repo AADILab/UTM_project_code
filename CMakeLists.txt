@@ -19,3 +19,12 @@ target_link_libraries( AbstractUTMSimulation ${LIBS_TO_LINK} )
 file(COPY config.yaml DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY Domains DESTINATION ${CMAKE_BINARY_DIR})
 
+# Copy the postprocessing scripts
+# to the "installation" directory
+file(COPY scripts/pretty.py DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY scripts/replay_utm_log.m DESTINATION ${CMAKE_BINARY_DIR})
+
+# Create the neural_nets directory
+# If not present, a bunch of errors are printed:
+# "Failed to open neural_nets/net_2_2.csv."
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/neural_nets)

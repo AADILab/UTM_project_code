@@ -3,8 +3,8 @@
 clear variables ;
 close all ;
 sctrs = 11;
-domaindir = 'build/Domains/' ;
-trackerdir = 'build/Tracker/' ;
+domaindir = ['Domains' filesep];
+trackerdir = ['Tracker' filesep];
 mode = ''; % can change this to look at a different folder
 run = 0 ;
 epoch = 0 ;
