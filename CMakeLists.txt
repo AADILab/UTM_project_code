@@ -5,7 +5,8 @@ find_package(Boost COMPONENTS system filesystem REQUIRED)
 include_directories( ${Boost_INCLUDE_DIRS} )
 include_directories(libraries)
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall")
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_subdirectory(libraries)
 
 set( LIBS_TO_LINK Domains FileIO Learning Math Multiagent Planning Simulation STL UTM yaml-cpp)
