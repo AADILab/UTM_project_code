@@ -1,5 +1,6 @@
-# Ignore build folder
+# Ignore build and doc folders
 build
+html
 
 # Ignore Emacs droppings
 *~
