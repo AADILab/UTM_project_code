@@ -46,10 +46,10 @@ approximator:
   output: 1
 
 time:
- epochs: 100
+ epochs: 3
  trials: 1
- steps: 100
- runs: 20
+ steps: 3
+ runs: 2
 
 constants:
  sectors: 11
