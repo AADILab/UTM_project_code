@@ -1,3 +1,4 @@
+//! @file
 // Copyright 2016 Carrie Rebhuhn
 // AbstractUTMSimulation.cpp : Defines the entry point for the console
 // application.
@@ -23,13 +24,13 @@ void print_nets(MultiagentNE* MAS, size_t run) {
 }
 
 void abstractUtmSimulation(std::string fitness) {
-	// Read some parameters from config file
+  // Read some parameters from config file
   YAML::Node configs = YAML::LoadFile(config_file);
-	auto e = configs["time"]["epochs"].as<int>();
-	auto runs = configs["time"]["runs"].as<int>();
-	auto state_rep = configs["modes"]["state"].as<std::string>();
+  auto e = configs["time"]["epochs"].as<int>();
+  auto runs = configs["time"]["runs"].as<int>();
+  auto state_rep = configs["modes"]["state"].as<std::string>();
 	
-	// Check tracking configuration
+  // Check tracking configuration
   bool tracking = configs["modes"]["tracking"].as<bool>();
   bool track_all = false ;
   if (tracking){
@@ -47,43 +48,43 @@ void abstractUtmSimulation(std::string fitness) {
     }
   }
 
-	// Create UTM Domain
+  // Create UTM Domain
   UTMDomainAbstract* domain = new UTMDomainAbstract(configs);
     
-	// Start the runs
-	for (int r = 0; r < runs; r++)
-	{
-	  srand(r+1); // increment random seed
+  // Start the runs
+  for (int r = 0; r < runs; r++)
+  {
+    srand(r+1); // increment random seed
 		
-		// Each time we start a run, we create new agents...
-		MultiagentNE* MAS = new MultiagentNE(configs, domain);
-		// ...and a new simulator. Unnecessary to create new domain because we can just reset it.
-		SimNE sim(domain, MAS, configs, "This string does nothing right now");
-		sim.fitness_metric = fitness;
-	  if (tracking){ // log simulation data for all runs if track_all = true, only log for first stat run if track_all = false
-	    if (!track_all && r > 0){
-	      domain->ChangeTrackingStatus(false) ;
-	      sim.ChangeTrackingStatus(false) ;
+    // Each time we start a run, we create new agents...
+    MultiagentNE* MAS = new MultiagentNE(configs, domain);
+    // ...and a new simulator. Unnecessary to create new domain because we can just reset it.
+    SimNE sim(domain, MAS, configs, "This string does nothing right now");
+    sim.fitness_metric = fitness;
+    if (tracking){ // log simulation data for all runs if track_all = true, only log for first stat run if track_all = false
+      if (!track_all && r > 0){
+        domain->ChangeTrackingStatus(false) ;
+        sim.ChangeTrackingStatus(false) ;
       }
       else{
         domain->ChangeTrackingStatus(true) ;
         sim.ChangeTrackingStatus(true) ;
       }
     }
-		sim.runExperiment();
-	  print_nets(MAS, r);
+    sim.runExperiment();
+    print_nets(MAS, r);
 		
-		// Output performance, one file for each run
-		std::string metrics_dir = domain->getOutputMetricsDirectory() ;
-		sim.outputMetricLog(metrics_dir + "global_" + state_rep + "_" + std::to_string(e) + "_" + std::to_string(r));
-		// Output extra stuff: delay, moving time, and wait time
-		sim.outputExtraMetrics(metrics_dir);
-		// Increment run in domain, reset epoch counter
-		domain->T->run++;
-		domain->T->epoch = 0;
-		
-		delete MAS;
-	}
+    // Output performance, one file for each run
+    std::string metrics_dir = domain->getOutputMetricsDirectory() ;
+    sim.outputMetricLog(metrics_dir + "global_" + state_rep + "_" + std::to_string(e) + "_" + std::to_string(r));
+    // Output extra stuff: delay, moving time, and wait time
+    sim.outputExtraMetrics(metrics_dir);
+    // Increment run in domain, reset epoch counter
+    domain->T->run++;
+    domain->T->epoch = 0;
+    
+    delete MAS;
+  }
 
   delete domain;
 }
@@ -127,30 +128,30 @@ void abstractUtmSimulationSingleAgent() {
     }
     delete MAS;
     delete domain;
-   }
+  }
 }
 
 void abstractUtmSimulationDiffApprox(std::string costmode, std::string rwdmode) {
   YAML::Node configs = YAML::LoadFile(config_file);
   auto e = configs["time"]["epochs"].as<int>();
-	auto runs = configs["time"]["runs"].as<int>();
-	auto state_rep = configs["modes"]["state"].as<std::string>();
-	auto obj = configs["modes"]["objective"].as<std::string>();
+  auto runs = configs["time"]["runs"].as<int>();
+  auto state_rep = configs["modes"]["state"].as<std::string>();
+  auto obj = configs["modes"]["objective"].as<std::string>();
   UTMDomainAbstract* domain = new UTMDomainAbstract(configs, costmode);
   domain->k_reward_mode_ = rwdmode;
 
   for (int r = 0; r < runs; r++)
   {
-	  MultiagentNE* MAS = new MultiagentNE(configs, domain);
-	  SimNE sim(domain, MAS, configs, "This string does nothing right now");
+    MultiagentNE* MAS = new MultiagentNE(configs, domain);
+    SimNE sim(domain, MAS, configs, "This string does nothing right now");
+    
+    sim.runExperiment();
+    //cio::print2<double>(sim.survivor_persistence, "survivorpersistence");
+    //print_nets(MAS, t);
+    sim.outputMetricLog(costmode + "_" + obj + "_" + state_rep + "_" + std::to_string(e) + "_" + rwdmode + "_run" + std::to_string(domain->T->run));
+    sim.outputExtraMetrics();
 
-	  sim.runExperiment();
-	  //cio::print2<double>(sim.survivor_persistence, "survivorpersistence");
-	  //print_nets(MAS, t);
-	  sim.outputMetricLog(costmode + "_" + obj + "_" + state_rep + "_" + std::to_string(e) + "_" + rwdmode + "_run" + std::to_string(domain->T->run));
-	  sim.outputExtraMetrics();
-
-	  delete MAS;
+    delete MAS;
   }
   delete domain;
 }
