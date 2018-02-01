@@ -12,6 +12,7 @@
 #include "Simulation/SimNE.h"
 #include "Domains/UTM/UTMDomainAbstract.h"
 #include "Impactfulness.h"
+#include "threadpool.hpp"
 
 using std::vector;
 std::string config_file = "config.yaml";
@@ -23,13 +24,10 @@ void print_nets(MultiagentNE* MAS, size_t run) {
   }
 }
 
-void abstractUtmSimulation(std::string fitness) {
-  // Read some parameters from config file
-  YAML::Node configs = YAML::LoadFile(config_file);
-  auto e = configs["time"]["epochs"].as<int>();
-  auto runs = configs["time"]["runs"].as<int>();
+void abstractUtmSimulationSingleRun(int r, YAML::Node configs, std::string fitness)
+{
   auto state_rep = configs["modes"]["state"].as<std::string>();
-	
+  auto e = configs["time"]["epochs"].as<int>();
   // Check tracking configuration
   bool tracking = configs["modes"]["tracking"].as<bool>();
   bool track_all = false ;
@@ -47,46 +45,54 @@ void abstractUtmSimulation(std::string fitness) {
       }
     }
   }
-
   // Create UTM Domain
   UTMDomainAbstract* domain = new UTMDomainAbstract(configs);
+  domain->T->run = r;
+  domain->T->epoch = 0;
+  
+  srand(r+1); // increment random seed
+		
+  // Each time we start a run, we create new agents...
+  MultiagentNE* MAS = new MultiagentNE(configs, domain);
+  // ...and a new simulator. Unnecessary to create new domain because we can just reset it.
+  SimNE sim(domain, MAS, configs, "This string does nothing right now");
+  sim.fitness_metric = fitness;
+  if (tracking){ // log simulation data for all runs if track_all = true, only log for first stat run if track_all = false
+    if (!track_all && r > 0){
+      domain->ChangeTrackingStatus(false) ;
+      sim.ChangeTrackingStatus(false) ;
+    }
+    else{
+      domain->ChangeTrackingStatus(true) ;
+      sim.ChangeTrackingStatus(true) ;
+    }
+  }
+  sim.runExperiment();
+  print_nets(MAS, r);
+		
+  // Output performance, one file for each run
+  std::string metrics_dir = domain->getOutputMetricsDirectory() ;
+  sim.outputMetricLog(metrics_dir + "global_" + state_rep + "_" + std::to_string(e) + "_" + std::to_string(r));
+  // Output extra stuff: delay, moving time, and wait time
+  sim.outputExtraMetrics(metrics_dir);
     
+  delete MAS;
+  delete domain;
+}
+
+void abstractUtmSimulation(std::string fitness) {
+  // Read some parameters from config file
+  YAML::Node configs = YAML::LoadFile(config_file);
+
+  auto runs = configs["time"]["runs"].as<int>();
+
+  ThreadPool pool(6);
+  
   // Start the runs
   for (int r = 0; r < runs; r++)
   {
-    srand(r+1); // increment random seed
-		
-    // Each time we start a run, we create new agents...
-    MultiagentNE* MAS = new MultiagentNE(configs, domain);
-    // ...and a new simulator. Unnecessary to create new domain because we can just reset it.
-    SimNE sim(domain, MAS, configs, "This string does nothing right now");
-    sim.fitness_metric = fitness;
-    if (tracking){ // log simulation data for all runs if track_all = true, only log for first stat run if track_all = false
-      if (!track_all && r > 0){
-        domain->ChangeTrackingStatus(false) ;
-        sim.ChangeTrackingStatus(false) ;
-      }
-      else{
-        domain->ChangeTrackingStatus(true) ;
-        sim.ChangeTrackingStatus(true) ;
-      }
-    }
-    sim.runExperiment();
-    print_nets(MAS, r);
-		
-    // Output performance, one file for each run
-    std::string metrics_dir = domain->getOutputMetricsDirectory() ;
-    sim.outputMetricLog(metrics_dir + "global_" + state_rep + "_" + std::to_string(e) + "_" + std::to_string(r));
-    // Output extra stuff: delay, moving time, and wait time
-    sim.outputExtraMetrics(metrics_dir);
-    // Increment run in domain, reset epoch counter
-    domain->T->run++;
-    domain->T->epoch = 0;
-    
-    delete MAS;
+    pool.schedule(std::bind(abstractUtmSimulationSingleRun, r, configs, fitness));
   }
-
-  delete domain;
 }
 
 void abstractUtmSimulationSingleAgent() {
