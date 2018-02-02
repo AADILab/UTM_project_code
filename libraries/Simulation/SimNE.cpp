@@ -53,6 +53,30 @@ void SimNE::runExperiment() {
 	} while (T->iterateEpochs());
 }
 
+void SimNE::runExperimentTest() { // Test trained MAS
+	do {
+	  if (tracking_enabled){
+	    tracking = true ;
+	    if (!tracking_all_enabled && (T->epoch != 0 && T->epoch != T->MAX_EPOCH-1))
+	      tracking = false ;
+    }
+    else
+      tracking = false ;
+    
+    if (tracking)
+      std::cout << "Logging simulation data for playback.\n" ;
+      
+		timer.start();
+		this->epochTest();
+		timer.stop();
+
+		printf("Epoch %i. ", T->epoch);
+		timer.printTimePassed();
+		timer.printEndEstimate(T->MAX_EPOCH - T->epoch);
+		printf("\n");
+	} while (T->iterateEpochs());
+}
+
 void SimNE::outputLearningLog(std::string filename)
 {
 	//always overwrite
@@ -141,7 +165,7 @@ SimNE::SimHistory SimNE::simGlobal() {
     matrix2d A = this->getActions(S);
     
     double g = domain->simulateStep(A);
-    matrix1d extra = domain->getExtraInfo();
+    matrix1d extra = domain->getExtraInfo(); // fourth element inside extra stores total UAVs up to current step, fifth element stores total UAVs that have reached destination up to current step
     SH.addState(S,T->step);
     SH.addAction(A, T->step);
 
@@ -183,25 +207,32 @@ void SimNE::epoch() {
     SimNE::SimHistory SH;
     matrix1d R;
     double G;
+    size_t U ;
     
     if (fitness_metric == "difference_resim_A") {
       pair<matrix1d, double> DG = simDifferenceResimA();
       R = DG.first;
       G = DG.second;
+		  U = SH.E[T->step -1][3] ; // total UAVs in epoch
     } else if (fitness_metric == "difference_resim_P") {
       pair<matrix1d, double> DG = simDifferenceResimP();
       R = DG.first;
       G = DG.second;
+		  U = SH.E[T->step -1][3] ; // total UAVs in epoch
 	  } else {
 		  SH = simGlobal();
 		  G = easymath::sum(SH.G);
+		  U = SH.E[T->step -1][3] ; // total UAVs in epoch
 		  R = domain->getRewards();
 	  }
 	  
     //G = -G;
     //R = matrix1d(R.size(), 0.0) - R; ????
 
-    if (accounts.update(R, G, n))
+    // JJC edit: best performance, etc. all associated with R = G/(uav_count - uavs_.size()) i.e. total UAV time divided by number of UAVs that reached destination
+//    if (accounts.update(R, G/(double)U, n))
+    double R_out = R[0] ;
+    if (accounts.update(R, R_out, n))
 		  accounts.update_extra(SH.E, SH.EE, T->eval);
 
     if (G > best_G) {
@@ -225,6 +256,58 @@ void SimNE::epoch() {
 	
   // cio::print2(best_W, "weights" + std::to_string(ep) + ".csv");
   // cio::print2(best_S, "states" + std::to_string(ep) + ".csv");
+
+  reward_log.push_back(accounts.best_run);
+  metric_log.push_back(accounts.best_run_performance);
+	extra_metric_log.push_back(accounts.best_extra);
+	extra_extra_metric_log.push_back(accounts.best_extra_extra);
+}
+
+void SimNE::epochTest() { // Test trained MAS
+
+  SimNE::accounting accounts = SimNE::accounting();
+
+  matrix2d best_W;
+  matrix2d best_S;
+  double best_G=-1000000;
+  int n = 0 ;
+  do {
+    SimNE::SimHistory SH;
+    matrix1d R;
+    double G;
+    size_t U ;
+    
+    if (fitness_metric == "difference_resim_A") {
+      pair<matrix1d, double> DG = simDifferenceResimA();
+      R = DG.first;
+      G = DG.second;
+		  U = SH.E[T->step -1][3] ; // total UAVs in epoch
+    } else if (fitness_metric == "difference_resim_P") {
+      pair<matrix1d, double> DG = simDifferenceResimP();
+      R = DG.first;
+      G = DG.second;
+		  U = SH.E[T->step -1][3] ; // total UAVs in epoch
+	  } else {
+		  SH = simGlobal();
+		  G = easymath::sum(SH.G);
+		  U = SH.E[T->step -1][3] ; // total UAVs in epoch
+		  R = domain->getRewards();
+	  }
+	  
+    double R_out = R[0] ;
+    if (accounts.update(R, R_out, n))
+		  accounts.update_extra(SH.E, SH.EE, T->eval);
+
+    if (G > best_G) {
+      best_W = domain->actionHistory();
+      best_S = domain->stateHistory();
+    }
+
+    domain->printMaxMinAction();
+    domain->reset(); // reset domain for next team
+    
+    n++ ;
+  } while (MAS->set_next_pop_members());
 
   reward_log.push_back(accounts.best_run);
   metric_log.push_back(accounts.best_run_performance);
@@ -342,10 +425,11 @@ void SimNE::accounting::update_extra(const matrix2d &extra, const matrix2d &extr
 		matrix1d sum_extra = easymath::zeros(extra[0].size());
 		size_t i;
 		for (i = 0; i < extra.size(); i++) {
-			for (size_t j = 0; j < extra[0].size() - 1; j++) // extra info has 4 fields remember. We're only iterating through first 3
+			for (size_t j = 0; j < extra[0].size() - 2; j++) // extra info has 5 fields remember. We're only iterating through first 3
 				sum_extra[j] += extra[i][j]; // This is where delay time, moving time, wait time calculated for 			
 		}
-		sum_extra[extra[0].size() - 1] = extra[i-1][extra[0].size() - 1]; // I think this is just number of UAVs
+		sum_extra[extra[0].size() - 2] = extra[i-1][extra[0].size() - 2]; // Total UAVs
+		sum_extra[extra[0].size() - 1] = extra[i-1][extra[0].size() - 1]; // UAVs that reached destination
 		
 		best_extra = sum_extra;
 		best_extra_extra = extraExtra;

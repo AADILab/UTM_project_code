@@ -24,7 +24,9 @@ NeuroEvo::NeuroEvo(YAML::Node configs, bool active) {
 
 void NeuroEvo::updatePolicyValues(double R) {
   // Add together xi values, for averaging
-  double xi = 0.1;  // "learning rate" for NE
+//  double xi = 0.1;  // "learning rate" for NE
+  // Edit JJC: suspicious of above equation introducing hysteresis into learning, removing it.
+  double xi = 1.0 ;
 
   if ((*pop_member_active_)->isFirstEvaluation()) {
     xi = 1.0; // don't take initial (zero) value into account

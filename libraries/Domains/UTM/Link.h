@@ -25,8 +25,11 @@ class Link {
     *         if set to 0, no scaling occurs
     *  \param cumulative whether or not the link uses a full window (yes if true)
     */
+//    Link(size_t id, size_t source, size_t target, size_t time,
+//         size_t capacity, size_t cardinal_dir, size_t window_size, bool cumulative);
+    // JJC: new constructor for comparative experiments
     Link(size_t id, size_t source, size_t target, size_t time,
-         size_t capacity, size_t cardinal_dir, size_t window_size, bool cumulative);
+         size_t capacity, size_t cardinal_dir, size_t window_size, bool cumulative, size_t cost = 0);
 
     std::vector<Link*> k_connections_; /**< all links that connect to this link */
     bool atCapacity();
@@ -95,6 +98,7 @@ class Link {
 	  size_t delays; /**< LAST MINUTE ADDITION how many times UAVs on this link could not get added to another link */
   private:
     const int time_;  /**< Amount of time it takes to travel across link */
+    const int cost_; // JJC: Fixed cost for crossing link
     size_t k_capacity_;  /**< Capacity of link */
     
     /** Called if a UAV is successfully added to this link from link with source node ID src 

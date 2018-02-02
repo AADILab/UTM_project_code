@@ -12,3 +12,9 @@ set( LIBS_TO_LINK Domains FileIO Learning Math Multiagent Planning Simulation ST
 
 add_executable(AbstractUTMSimulation AbstractUTMSimulation.cpp)
 target_link_libraries( AbstractUTMSimulation ${LIBS_TO_LINK} )
+
+#add_executable(testNNLoad testNNLoad.cpp)
+#target_link_libraries( testNNLoad ${LIBS_TO_LINK} )
+
+#add_executable(AbstractUTMTesting AbstractUTMTesting.cpp)
+#target_link_libraries( AbstractUTMTesting ${LIBS_TO_LINK} )

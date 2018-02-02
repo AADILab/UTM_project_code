@@ -60,6 +60,8 @@ public:
   std::vector<size_t> destination_sectors; /**< goal sectors for the UAVs */
   std::string k_reward_mode_;
   bool k_extra_info_; /**< If we're recording extra information or not (delays, moving time, ground hold time) */
+  std::string k_agent_type_; // JJC: for comparative experiments
+  std::string k_travel_time_; // JJC: for listed distances
 
   // Reward
   std::vector<GNN*> G_t; /**< Predicted timestep G */
@@ -70,6 +72,8 @@ public:
   matrix2d getExtraExtraInfo(); /**< Retrieve information, or each link, on how many times its UAVs are delayed as
 						           well as how many times the link denies a UAV entry because of full capacity. NOT USED */
   std::string getOutputMetricsDirectory(){return metrics_dir ;}
+  
+  size_t getTotalNumberUAVs(){return uav_count ;} // Return the total number of UAVs up to the current timestep
 protected:
 	//bool resetUavNums = true; 
 
@@ -204,7 +208,10 @@ protected:
   *  \param e edge which specifies source and target nodes
   *  \param flat_capacity the capacity of the new link
   */
-	void addLink(edge e, double flat_capacity);
+//	void addLink(edge e, double flat_capacity);
+
+  // JJC: add links with fixed costs and fixed travel time
+	void addLink(edge e, size_t flat_capacity, size_t cost, int time);
 	
   std::string createExperimentDirectory(std::string config_file);
 	

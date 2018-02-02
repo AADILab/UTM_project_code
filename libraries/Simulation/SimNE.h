@@ -125,9 +125,15 @@ public:
 
 	/** Mutates populations and runs a simulation for each team of agents. */
   virtual void epoch();
+
+	// Runs a simulation for each team of agents (test trained MAS)
+  virtual void epochTest();
 	
 	/** Starts a single run of training */
   virtual void runExperiment();
+  
+  // JJC: starts a single run of testing (trained MAS)
+  virtual void runExperimentTest();
 
   struct accounting {
     accounting();

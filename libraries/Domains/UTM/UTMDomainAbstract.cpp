@@ -55,6 +55,8 @@ UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, std::string costmode, b
   k_window_mode_ = configs["modes"]["window_mode"].as<std::string>();
   k_window_size_ = configs["constants"]["window_size"].as<size_t>();
   k_capacity_mode_ = configs["modes"]["capacity"].as<string>();
+  k_agent_type_ = configs["modes"]["agent_type"].as<string>();
+  k_travel_time_ = configs["modes"]["travel_time"].as<string>();
 
   // Pointer to tracker
   tracker = new UTMTracker(T, getNumAgents(), k_num_sectors_);
@@ -70,21 +72,78 @@ UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, std::string costmode, b
   vector<XY> locs = cio::readPairs<XY>(vfile);
 
   high_graph_ = new LinkGraph(locs, edges);
+  
+  /* JJC: Link construction */
+//  if (k_agent_type_ == "fixed") { // Fixed agents for comparative experimentsauto genfile = cio::read2<size_t>(domain_dir + "generation_points.csv");
+//    costfile = cio::read2<size_t>(domain_dir + "costs.csv");
+//  }
 
+//  // Link construction
+//	k_link_ids_ = new map<edge, size_t>();
+//	if (k_capacity_mode_ == "flat") // All links have equal capacity
+//	{
+//		double flat_capacity = configs["constants"]["capacity"].as<double>();
+//		for (edge e : edges) addLink(e, flat_capacity);
+//	}
+//	else // All links have capacities as specified in capacity file (Domain dir)
+//	{
+//		auto capfile = cio::read2<size_t>(domain_dir + "capacity.csv");
+//		for (size_t i = 0; i < capfile.size(); i++) {
+//		  if (k_agent_type_ == "fixed") {
+//        auto costfile = cio::read2<size_t>(domain_dir + "costs.csv");
+//		    addLink(edges[i], capfile[i][0], costfile[i][0]);
+//	    }
+//	    else{
+//  			addLink(edges[i], capfile[i][0], 0);
+//			}
+//		}
+//	}
+  
   // Link construction
 	k_link_ids_ = new map<edge, size_t>();
-	if (k_capacity_mode_ == "flat") // All links have equal capacity
-	{
-		double flat_capacity = configs["constants"]["capacity"].as<double>();
-		for (edge e : edges) addLink(e, flat_capacity);
+	bool isLoopConstruct = false ;
+	size_t loopSize = 0 ;
+	size_t cap_e = 0 ;
+	size_t cost_e = 0 ;
+	int dist_e = -1 ;
+	vector<vector<size_t>> capfile ;
+	vector<vector<size_t>> costfile ;
+	vector<vector<int>> distfile ;
+	
+	if (k_capacity_mode_ == "flat"){ // All links have equal capacity
+		cap_e = configs["constants"]["capacity"].as<size_t>();
 	}
-	else // All links have capacities as specified in capacity file (Domain dir)
-	{
-		auto capfile = cio::read2<size_t>(domain_dir + "capacity.csv");
-		for (size_t i = 0; i < capfile.size(); i++) {
-			addLink(edges[i], capfile[i][0]);
-		}
+	else{
+	  capfile = cio::read2<size_t>(domain_dir + "capacity.csv");
+	  isLoopConstruct = true ;
+	  loopSize = capfile.size() ;
+  }
+  if (k_agent_type_ == "fixed"){
+		costfile = cio::read2<size_t>(domain_dir + "costs.csv");
+		isLoopConstruct = true ;
+		loopSize = costfile.size() ;
 	}
+	if (k_travel_time_ == "list"){
+	  distfile = cio::read2<int>(domain_dir + "distances.csv");
+	  isLoopConstruct = true ;
+	  loopSize = distfile.size() ;
+  }
+  if (!isLoopConstruct){
+    for (edge e : edges) addLink(e, cap_e, cost_e, dist_e);
+  }
+  else{
+    for (size_t i = 0; i < loopSize; i++) {
+      if (k_capacity_mode_ == "list")
+        cap_e = capfile[i][0] ;
+      if (k_agent_type_ == "fixed")
+		    cost_e = costfile[i][0] ;
+	    if (k_travel_time_ == "list")
+	      dist_e = distfile[i][0] ; 
+      
+	    addLink(edges[i], cap_e, cost_e, dist_e);
+    }
+  }
+  /* JJC: end link construction */
 
 	// For each link, add links that connect to it
   for (auto l:links_) {
@@ -128,6 +187,7 @@ UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, std::string costmode, b
       destination_sectors.push_back(destfile[i][0]);
     }
   }
+  
   
   // Sector/Fix  construction
   uav_count = 0;
@@ -230,7 +290,29 @@ UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, std::string costmode, b
 	}
 }
 
-void UTMDomainAbstract::addLink(UTMDomainAbstract::edge e, double flat_capacity) {
+//void UTMDomainAbstract::addLink(UTMDomainAbstract::edge e, double flat_capacity) {
+//  size_t source = e.first;   // membership of origin of edge
+//  size_t target = e.second;  // membership of connected node
+//  vector<XY> locs = high_graph_->get_locations();
+//  XY s_loc = locs[source];
+//  XY t_loc = locs[target];
+
+//  size_t cardinal_dir = cardinal_direction(t_loc - s_loc);
+//  size_t dist = static_cast<size_t>(euclidean_distance(s_loc, t_loc));
+//  if (dist == 0)
+//    dist = 1;
+
+//  Link* newLink = new Link(links_.size(), source, target, dist,
+//	static_cast<size_t>(flat_capacity), cardinal_dir, k_window_size_, k_window_mode_ == "cumulative");
+//  links_.push_back(newLink); // add link to list of all links
+
+//  k_link_ids_->insert(make_pair(e, links_.size() - 1));
+
+//  k_incoming_links_[target].push_back(source);
+//}
+
+// JJC: comparative experiments with fixed costs
+void UTMDomainAbstract::addLink(edge e, size_t flat_capacity, size_t cost, int dist_e) {
   size_t source = e.first;   // membership of origin of edge
   size_t target = e.second;  // membership of connected node
   vector<XY> locs = high_graph_->get_locations();
@@ -238,12 +320,16 @@ void UTMDomainAbstract::addLink(UTMDomainAbstract::edge e, double flat_capacity)
   XY t_loc = locs[target];
 
   size_t cardinal_dir = cardinal_direction(t_loc - s_loc);
-  size_t dist = static_cast<size_t>(euclidean_distance(s_loc, t_loc));
+  size_t dist ;
+  if (dist_e < 0)
+    dist = static_cast<size_t>(euclidean_distance(s_loc, t_loc));
+  else
+    dist = dist_e ;
   if (dist == 0)
     dist = 1;
 
   Link* newLink = new Link(links_.size(), source, target, dist,
-	static_cast<size_t>(flat_capacity), cardinal_dir, k_window_size_, k_window_mode_ == "cumulative");
+	static_cast<size_t>(flat_capacity), cardinal_dir, k_window_size_, k_window_mode_ == "cumulative", cost);
   links_.push_back(newLink); // add link to list of all links
 
   k_link_ids_->insert(make_pair(e, links_.size() - 1));
@@ -278,6 +364,10 @@ double UTMDomainAbstract::getPerformance() {
 
 matrix1d UTMDomainAbstract::getRewards() {
   double G_actual = getPerformance();
+//  std::cout << "G_actual: " << G_actual ;
+  // JJC: edit here to normalize by number of uavs generated in system that reached destination
+  G_actual /= (uav_count - uavs_.size()) ;
+//  std::cout << ", normalized according to #UAVs: " << G_actual << "\n" ;
   if (k_reward_mode_ == "global") {
     return matrix1d(k_num_agents_, G_actual);
   } else {
@@ -347,6 +437,7 @@ double UTMDomainAbstract::incrementUavPath() {
       }
     }
   }
+  
   // Always return travel time. We can deal with delay vs. travel time later (see getPerformance)
   return static_cast<double>(delays + moving + ground_hold);
 }
@@ -367,6 +458,7 @@ double UTMDomainAbstract::simulateStep(matrix2d agent_actions) {
   for (int i = 0; i < agent_actions.size(); i++) {
       agent_actions[i][0] = 1;
   }//*/
+  
 
   // Alter the cost maps (agent actions)
   matrix1d w = agents_->actionsToWeights(agent_actions);
@@ -412,7 +504,6 @@ double UTMDomainAbstract::simulateStep(matrix2d agent_actions) {
   if (action_changed && D_star) {
     getPathPlans();
   }
-
   // uavs_ move
   double step_delay = incrementUavPath();
   list<UAV*> wait;
@@ -492,7 +583,8 @@ void UTMDomainAbstract::reset() {
   max_action = DBL_MIN;
   min_action = DBL_MAX;
   //nn_states_saved = matrix3d(k_num_steps_, matrix2d(k_num_agents_));
-  std::printf("%i uavs\n", uavs_.size());
+//  std::printf("%i uavs in uavs_, %i uavs according to uav_count\n", uavs_.size(), uav_count);
+  std::printf("%i / %i reached destination\n", (uav_count - uavs_.size()), uav_count);
   while (!uavs_.empty()) {
     delete uavs_.back();
     uavs_.pop_back();
@@ -608,6 +700,7 @@ matrix1d UTMDomainAbstract::getExtraInfo() {
 		info.push_back(delays);
 		info.push_back(ground_hold);
 		info.push_back(uav_count);
+		info.push_back(uav_count - uavs_.size()) ;
 	}
 	return info;
 }

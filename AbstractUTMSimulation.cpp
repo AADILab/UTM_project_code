@@ -51,9 +51,9 @@ void abstractUtmSimulation(std::string fitness) {
   UTMDomainAbstract* domain = new UTMDomainAbstract(configs);
     
 	// Start the runs
-	for (int r = 0; r < runs; r++)
+	for (int r = 1; r < runs; r++)
 	{
-	  srand(r+1); // increment random seed
+	  srand(r+121); // increment random seed
 		
 		// Each time we start a run, we create new agents...
 		MultiagentNE* MAS = new MultiagentNE(configs, domain);

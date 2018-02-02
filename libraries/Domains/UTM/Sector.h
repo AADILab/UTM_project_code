@@ -7,6 +7,7 @@
 #include "Link.h"
 #include <vector>
 #include <map>
+#include <math.h>
 
 class Sector {
   public:
@@ -112,7 +113,12 @@ class Sector {
 		  // If UAVs should be generated at this timestep...
       else if (shouldGenerateUav(step)) {
 			  // ...generate number of UAVs specified in config file
-        for (int i = 0; i < k_num_generated_; i++) {
+//        for (int i = 0; i < k_num_generated_; i++) {
+//            uavs.push_back(generateUav(uavs_generated));
+//        }
+        // JJC edit: generate at least one, but up to number of UAVs specified in config file
+        int n_new_uavs = (int)ceil(easymath::rand(0,k_num_generated_)) ;
+        for (int i = 0; i < n_new_uavs; i++) {
             uavs.push_back(generateUav(uavs_generated));
         }
       }

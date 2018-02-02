@@ -2,7 +2,7 @@
 
 clear variables ;
 close all ;
-sctrs = 11;
+sctrs = 6;
 domaindir = 'build/Domains/' ;
 trackerdir = 'build/Tracker/' ;
 mode = ''; % can change this to look at a different folder
@@ -35,8 +35,8 @@ nodes = csvread(nodesFile) ;
 edges = csvread(edgesFile) ;
 caps = csvread(capsFile) ;
 eInd = edges + 1 ;
-edgeTime = csvread(edgeTimeFile) ; % toggle if edgeTimeFile available
-% edgeTime = zeros(size(eInd,1),1) ; % toggle if edgeTimeFile available
+% edgeTime = csvread(edgeTimeFile) ; % toggle if edgeTimeFile available
+edgeTime = zeros(size(eInd,1),1) ; % toggle if edgeTimeFile available
 edgeLen = zeros(size(eInd,1),1) ;
 xrange = max(nodes(:,1)) - min(nodes(:,1)) ;
 yrange = max(nodes(:,2)) - min(nodes(:,2)) ;
