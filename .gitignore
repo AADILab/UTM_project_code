@@ -1,2 +1,9 @@
 *.csv
-build/*
+
+# Ignore build and doc folders
+build
+html
+
+# Ignore Emacs droppings
+*~
+
