@@ -2,20 +2,18 @@
 
 clear variables ;
 close all ;
-sctrs = 6;
-domaindir = 'build/Domains/' ;
-trackerdir = 'build/Tracker/' ;
 sctrs = 11;
-domaindir = ['Domains' filesep];
-trackerdir = ['Tracker' filesep];
+config = 106 ;
+domaindir = ['UTM_results/config_' num2str(config) '/Domains/'] ;
+trackerdir = ['UTM_results/config_' num2str(config) '/Tracker/'] ;
 mode = ''; % can change this to look at a different folder
 run = 0 ;
-epoch = 0 ;
+epoch = 199 ;
 eval = 0 ;
 
 % Filenames
-nodesFile = [domaindir num2str(sctrs) '_Sectors' mode '/nodes.csv'] ; % node locations
-edgesFile = [domaindir num2str(sctrs) '_Sectors' mode '/edges.csv'] ; % edge connections
+nodesFile = [domaindir num2str(sctrs) '_Sectors/nodes.csv'] ; % node locations
+edgesFile = [domaindir num2str(sctrs) '_Sectors/edges.csv'] ; % edge connections
 capsFile = [trackerdir num2str(sctrs) '_Sectors' mode '/capacities.csv'] ; % link capacities
 statesFile = [trackerdir num2str(sctrs) '_Sectors' mode '/states_run' num2str(run) '_epoch' num2str(epoch) '_eval' num2str(eval) '.csv'] ; % logged agent states
 weightsFile = [trackerdir num2str(sctrs) '_Sectors' mode '/weights_run' num2str(run) '_epoch' num2str(epoch) '_eval' num2str(eval) '.csv'] ; % logged agent output costs
@@ -27,7 +25,7 @@ edgeTimeFile = [trackerdir num2str(sctrs) '_Sectors' mode '/edgeTime.csv'] ; % t
 % Toggle
 pUAV = 1 ;
 pUAVnums = 1;
-pUAVwait = 0;
+pUAVwait = 1;
 pCap = 1 ;
 pCost = 1 ;
 pEnd = 0 ;
@@ -38,8 +36,8 @@ nodes = csvread(nodesFile) ;
 edges = csvread(edgesFile) ;
 caps = csvread(capsFile) ;
 eInd = edges + 1 ;
-% edgeTime = csvread(edgeTimeFile) ; % toggle if edgeTimeFile available
-edgeTime = zeros(size(eInd,1),1) ; % toggle if edgeTimeFile available
+edgeTime = csvread(edgeTimeFile) ; % toggle if edgeTimeFile available
+% edgeTime = zeros(size(eInd,1),1) ; % toggle if edgeTimeFile available
 edgeLen = zeros(size(eInd,1),1) ;
 xrange = max(nodes(:,1)) - min(nodes(:,1)) ;
 yrange = max(nodes(:,2)) - min(nodes(:,2)) ;
@@ -126,6 +124,8 @@ for i = 1:size(eInd,1)
 end
 axis tight ;
 
+% edgeTime = floor(edgeLen) ;
+
 %% Load log files
 states = csvread(statesFile) ;
 weights = csvread(weightsFile) ;
@@ -136,7 +136,7 @@ team = 1:nAgents:size(states,2) ;
 % Trim extra columns
 if (mod(size(states,2),nAgents) ~= 0)
     team = team(1:end-1) ;
-    fprintf('Ignoring extra columns %i:%i\n',team(end)+1,size(states,2)) ;
+    fprintf('Ignoring extra columns %i:%i\n',team(end)*nAgents+1,size(states,2)) ;
 end
 fprintf('Displaying %is episode logs from %i UTM agent teams\n',tFinal,numel(team)) ;
 
@@ -163,6 +163,10 @@ if pUAV
     fclose(fid);
     uavStates = uCell{1} ;
     uCheck = csvread(uavLogFile) ;
+    if (size(uCheck,1) < tFinal)
+        uPad = -1*ones(tFinal-size(uCheck,1),size(uCheck,2)) ;
+        uCheck = [uPad; uCheck] ;
+    end
     uMax = zeros(numel(team),1) ;
     j = 1 ;
     for i = 1:tFinal:size(uCheck,1)
@@ -249,8 +253,10 @@ for utm = 1:numel(team)
                                 offs = offsetMult(uMat(jj,1)) + 1;
                                 xx = get(hUAVs(uMat(jj,1)),'xdata') ;
                                 yy = get(hUAVs(uMat(jj,1)),'ydata') ;
-                                dx = min(1,edgeLen(uMat(jj,2))/edgeTime(uMat(jj,2)))*cos(alpha(uMat(jj,2))) ;
-                                dy = min(1,edgeLen(uMat(jj,2))/edgeTime(uMat(jj,2)))*sin(alpha(uMat(jj,2))) ;
+%                                 dx = min(1,edgeLen(uMat(jj,2))/edgeTime(uMat(jj,2)))*cos(alpha(uMat(jj,2))) ;
+%                                 dy = min(1,edgeLen(uMat(jj,2))/edgeTime(uMat(jj,2)))*sin(alpha(uMat(jj,2))) ;
+                                dx = edgeLen(uMat(jj,2))/edgeTime(uMat(jj,2))*cos(alpha(uMat(jj,2))) ;
+                                dy = edgeLen(uMat(jj,2))/edgeTime(uMat(jj,2))*sin(alpha(uMat(jj,2))) ;
                                 xe = get(hE(uMat(jj,2)),'xdata') ;
                                 ye = get(hE(uMat(jj,2)),'ydata') ;
                                 xu = min(max(xx+dx,min(xe)),max(xe)) ;
@@ -316,63 +322,65 @@ for utm = 1:numel(team)
             end
             uRem = false(size(uMat,1),1) ;
             linkUavCount = zeros(size(caps));
-            if ~isnan(uMat(1))
-                for ii = 1:size(uMat,1) % look for new UAVs
-                    linkUavCount(uMat(ii,2)) = linkUavCount(uMat(ii,2)) + 1;
-                    bNew = true ;
-                    for jj = 1:size(uMat0,1)
-                        if uMat(ii,1) == uMat0(jj,1)
-                            bNew = false ; % not a new UAV
-                            break ;
-                        end
-                    end
-                    if bNew % new UAV in system
-                        uec = 'k' ;
-                        ufc = rand(1,3) ; % assign random colour
-                        bEmpty = false ; % search for empty space
-                        for kk = 1:numel(hS{uMat(ii,2)})
-                            if strcmp(get(hS{uMat(ii,2)}(kk),'color'),'none')
-                                if exist('offsetMult', 'var')
-                                    if size(offsetMult, 1) < uMat(ii,1)
-                                        offsetMult(uMat(ii,1)) = 0;
-                                    end
-                                else
-                                    offsetMult(uMat(ii,1)) = 0;
-                                end
-
-                                if linkUavCount(uMat(ii,2)) <= caps(uMat(ii,2))
-                                    bEmpty = true ;
-                                else
-                                    offsetMult(uMat(ii,1)) = mod(offsetMult(uMat(ii,1)), 4) + 1;
-                                end
-                                offs = offsetMult(uMat(ii,1)) + 1;
-                                xe = get(hE(uMat(ii,2)),'xdata') ;
-                                ye = get(hE(uMat(ii,2)),'ydata') ;
-                                hUAVs(uMat(ii,1)) = hS{uMat(ii,2)}(kk) ;
-    %                             hUAVnum(uMat(ii,1)) = hStext{uMat(ii,2)}(kk) ;
-                                xu = edgeLen(uMat(ii,2))/edgeTime(uMat(ii,2))*cos(alpha(uMat(ii,2)))+xe(1) ;
-                                yu = edgeLen(uMat(ii,2))/edgeTime(uMat(ii,2))*sin(alpha(uMat(ii,2)))+ye(1) ;
-                                set(hUAVs(uMat(ii,1)),'xdata',xu,'ydata',yu,'color',uec,'markerfacecolor',ufc) ;
-
-                                s = [num2str(xu) ' ' num2str(yu)] ;
-                                if ~ismember(s, keys(uavPosMap))
-                                    uavPosMap(s) = [] ;
-                                end
-
-                                uavPosMap(s) = [uavPosMap(s) uMat(ii,1)];
-
-    %                             set(hUAVnum(uMat(ii,1)),'Position',[xu+0.1*offs, yu],'String',num2str(uMat(ii,1)-1)) ;
-                                if pEnd
-                                    fprintf('UAV %i created. Heading to Sector %i\n', usMat(ii,1)-1, usMat(ii,2)-1) ;
-                                end
-    %                            text(xu + 0.1, yu, num2str(uMat(ii,1)), 'FontSize', fs, 'FontWeight', 'bold') ;
+            if (numel(uMat > 0))
+                if ~isnan(uMat(1))
+                    for ii = 1:size(uMat,1) % look for new UAVs
+                        linkUavCount(uMat(ii,2)) = linkUavCount(uMat(ii,2)) + 1;
+                        bNew = true ;
+                        for jj = 1:size(uMat0,1)
+                            if uMat(ii,1) == uMat0(jj,1)
+                                bNew = false ; % not a new UAV
                                 break ;
                             end
                         end
-                        if ~bEmpty % link agent capacity breached
-                            fprintf('DATA ERROR: UAV %i violating link agent %i''s capacity! (%i -> %i)\n',uMat(ii,1)-1,uMat(ii,2)-1, eInd(uMat(ii,2), 1), eInd(uMat(ii,2), 2)) ;
-    %                         fprintf('Removing UAV %i from rollover state\n',uMat(ii,1)-1) ;
-    %                         uRem(ii) = true ;
+                        if bNew % new UAV in system
+                            uec = 'k' ;
+                            ufc = rand(1,3) ; % assign random colour
+                            bEmpty = false ; % search for empty space
+                            for kk = 1:numel(hS{uMat(ii,2)})
+                                if strcmp(get(hS{uMat(ii,2)}(kk),'color'),'none')
+                                    if exist('offsetMult', 'var')
+                                        if size(offsetMult, 1) < uMat(ii,1)
+                                            offsetMult(uMat(ii,1)) = 0;
+                                        end
+                                    else
+                                        offsetMult(uMat(ii,1)) = 0;
+                                    end
+
+                                    if linkUavCount(uMat(ii,2)) <= caps(uMat(ii,2))
+                                        bEmpty = true ;
+                                    else
+                                        offsetMult(uMat(ii,1)) = mod(offsetMult(uMat(ii,1)), 4) + 1;
+                                    end
+                                    offs = offsetMult(uMat(ii,1)) + 1;
+                                    xe = get(hE(uMat(ii,2)),'xdata') ;
+                                    ye = get(hE(uMat(ii,2)),'ydata') ;
+                                    hUAVs(uMat(ii,1)) = hS{uMat(ii,2)}(kk) ;
+        %                             hUAVnum(uMat(ii,1)) = hStext{uMat(ii,2)}(kk) ;
+                                    xu = edgeLen(uMat(ii,2))/edgeTime(uMat(ii,2))*cos(alpha(uMat(ii,2)))+xe(1) ;
+                                    yu = edgeLen(uMat(ii,2))/edgeTime(uMat(ii,2))*sin(alpha(uMat(ii,2)))+ye(1) ;
+                                    set(hUAVs(uMat(ii,1)),'xdata',xu,'ydata',yu,'color',uec,'markerfacecolor',ufc) ;
+
+                                    s = [num2str(xu) ' ' num2str(yu)] ;
+                                    if ~ismember(s, keys(uavPosMap))
+                                        uavPosMap(s) = [] ;
+                                    end
+
+                                    uavPosMap(s) = [uavPosMap(s) uMat(ii,1)];
+
+        %                             set(hUAVnum(uMat(ii,1)),'Position',[xu+0.1*offs, yu],'String',num2str(uMat(ii,1)-1)) ;
+                                    if pEnd
+                                        fprintf('UAV %i created. Heading to Sector %i\n', usMat(ii,1)-1, usMat(ii,2)-1) ;
+                                    end
+        %                            text(xu + 0.1, yu, num2str(uMat(ii,1)), 'FontSize', fs, 'FontWeight', 'bold') ;
+                                    break ;
+                                end
+                            end
+                            if ~bEmpty % link agent capacity breached
+                                fprintf('DATA ERROR: UAV %i violating link agent %i''s capacity! (%i -> %i)\n',uMat(ii,1)-1,uMat(ii,2)-1, eInd(uMat(ii,2), 1), eInd(uMat(ii,2), 2)) ;
+        %                         fprintf('Removing UAV %i from rollover state\n',uMat(ii,1)-1) ;
+        %                         uRem(ii) = true ;
+                            end
                         end
                     end
                 end
