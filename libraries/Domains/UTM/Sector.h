@@ -92,41 +92,51 @@ class Sector {
       }
     }
 
-    size_t generateUavs(size_t step, size_t *uavs_generated) {
+    size_t generateUavs(size_t step, size_t *uavs_generated, bool init = false) {
 //      std::cout << "Creating new UAVs in the world...\n" ;
       // Creates new UAVs in the world
       std::vector<UAV*> uavs = std::vector<UAV*>();
-		  // This first if/else block is for "playing back" a particular pattern of UAV generation
-		  // Not really used, but might be useful later?
-		  if (k_traffic_mode_ == "playback") {
-			  if (!genfile.size() || last_eval != T->eval) {
-				  std::string fn = domain_dir +
-					  "uav_gen_run" + std::to_string(T->run) + "_epoch" + std::to_string(T->epoch) +
-					  "_eval" + std::to_string(T->eval) + ".csv";
-				  genfile = cio::read2<size_t>(fn, ",");
-				  last_eval = T->eval; // There's one file per eval
-			  }
-			  for (int i = 0; i < genfile[k_id_][T->step]; i++) {
-				  uavs.push_back(generateUav(uavs_generated));
-			  }
-		  }
-		  // If UAVs should be generated at this timestep...
-      else if (shouldGenerateUav(step)) {
-			  // ...generate number of UAVs specified in config file
-//        for (int i = 0; i < k_num_generated_; i++) {
-//            uavs.push_back(generateUav(uavs_generated));
-//        }
-        // JJC edit: generate at least one, but up to number of UAVs specified in config file
-        int n_new_uavs = (int)ceil(easymath::rand(0,k_num_generated_)) ;
-        for (int i = 0; i < n_new_uavs; i++) {
-            uavs.push_back(generateUav(uavs_generated));
-        }
+      if (init){ // Initialising UAVs for "keep" mode, default is set to false
+        uavs.push_back(generateUav(uavs_generated));
+        
+        if (uavs.size()) // If UAVs were generated, they are waiting at sector
+          waiting.insert(waiting.end(), uavs.begin(), uavs.end());
+          
+        return uavs.size() ;
       }
-      
-      if (uavs.size()) // If UAVs were generated, they are waiting at sector
-        waiting.insert(waiting.end(), uavs.begin(), uavs.end());
+      else{
+		    // This first if/else block is for "playing back" a particular pattern of UAV generation
+		    // Not really used, but might be useful later?
+		    if (k_traffic_mode_ == "playback") {
+			    if (!genfile.size() || last_eval != T->eval) {
+				    std::string fn = domain_dir +
+					    "uav_gen_run" + std::to_string(T->run) + "_epoch" + std::to_string(T->epoch) +
+					    "_eval" + std::to_string(T->eval) + ".csv";
+				    genfile = cio::read2<size_t>(fn, ",");
+				    last_eval = T->eval; // There's one file per eval
+			    }
+			    for (int i = 0; i < genfile[k_id_][T->step]; i++) {
+				    uavs.push_back(generateUav(uavs_generated));
+			    }
+		    }
+		    // If UAVs should be generated at this timestep...
+        else if (shouldGenerateUav(step)) {
+			    // ...generate number of UAVs specified in config file
+  //        for (int i = 0; i < k_num_generated_; i++) {
+  //            uavs.push_back(generateUav(uavs_generated));
+  //        }
+          // JJC edit: generate at least one, but up to number of UAVs specified in config file
+          int n_new_uavs = (int)ceil(easymath::rand(0,k_num_generated_)) ;
+          for (int i = 0; i < n_new_uavs; i++) {
+              uavs.push_back(generateUav(uavs_generated));
+          }
+        }
+        
+        if (uavs.size()) // If UAVs were generated, they are waiting at sector
+          waiting.insert(waiting.end(), uavs.begin(), uavs.end());
 
-		  return uavs.size();
+		    return uavs.size();
+		  }
     }
 
     UAV* generateUav(size_t *uavs_generated) {

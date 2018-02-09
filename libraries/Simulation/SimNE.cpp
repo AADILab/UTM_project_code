@@ -165,7 +165,7 @@ SimNE::SimHistory SimNE::simGlobal() {
     matrix2d A = this->getActions(S);
     
     double g = domain->simulateStep(A);
-    matrix1d extra = domain->getExtraInfo(); // fourth element inside extra stores total UAVs up to current step, fifth element stores total UAVs that have reached destination up to current step
+    matrix1d extra = domain->getExtraInfo(); // fourth element inside extra stores total UAVs up to current step (OR total missions assigned up to current step), fifth element stores total UAVs that have reached destination up to current step (OR total successful missions up to current step)
     SH.addState(S,T->step);
     SH.addAction(A, T->step);
 
@@ -213,23 +213,23 @@ void SimNE::epoch() {
       pair<matrix1d, double> DG = simDifferenceResimA();
       R = DG.first;
       G = DG.second;
-		  U = SH.E[T->step -1][3] ; // total UAVs in epoch
+		  U = SH.E[T->step -1][3] ; // total assigned missions in epoch
     } else if (fitness_metric == "difference_resim_P") {
       pair<matrix1d, double> DG = simDifferenceResimP();
       R = DG.first;
       G = DG.second;
-		  U = SH.E[T->step -1][3] ; // total UAVs in epoch
+		  U = SH.E[T->step -1][3] ; // total assigned missions in epoch
 	  } else {
 		  SH = simGlobal();
 		  G = easymath::sum(SH.G);
-		  U = SH.E[T->step -1][3] ; // total UAVs in epoch
+		  U = SH.E[T->step -1][3] ; // total assigned missions in epoch
 		  R = domain->getRewards();
 	  }
 	  
     //G = -G;
     //R = matrix1d(R.size(), 0.0) - R; ????
 
-    // JJC edit: best performance, etc. all associated with R = G/(uav_count - uavs_.size()) i.e. total UAV time divided by number of UAVs that reached destination
+    // JJC edit: best performance, etc. all associated with R = G/(completed_missions) i.e. total UAV time divided by number of completed missions
 //    if (accounts.update(R, G/(double)U, n))
     double R_out = R[0] ;
     if (accounts.update(R, R_out, n))

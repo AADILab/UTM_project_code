@@ -73,7 +73,8 @@ public:
 						           well as how many times the link denies a UAV entry because of full capacity. NOT USED */
   std::string getOutputMetricsDirectory(){return metrics_dir ;}
   
-  size_t getTotalNumberUAVs(){return uav_count ;} // Return the total number of UAVs up to the current timestep
+//  size_t getTotalNumberUAVs(){return uav_count ;} // Return the total number of UAVs up to the current timestep
+  size_t getTotalNumberUAVs(){return mission_count ;} // Return the total number of assigned missions up to the current timestep
 protected:
 	//bool resetUavNums = true; 
 
@@ -117,7 +118,9 @@ protected:
   std::vector<std::vector<int> > poses;
   std::list<UAV*> uavs_; /**< All UAVs currently in the domain */
   std::map<int, std::list<int> > k_incoming_links_; 
-  size_t uav_count; /**< Current total number of UAVs generated */
+//  size_t uav_count; /**< Current total number of UAVs generated */
+  size_t mission_count ; /*Current total number of assigned missions*/
+  size_t completed_count ; /*Current total number of completed missions*/
 	int delays, /**< total delay time experienced by all UAVs */
 	moving, /**< total time UAVs were moving */
 	ground_hold; /**< total time experienced by UAVs before traveling first link */
@@ -221,7 +224,7 @@ protected:
   /** Generates (with some probability) plane traffic for sector s.
   *  \param s the ID of the sector to generate UAVs 
 	*/
-  void getNewUavTraffic(int s);
+  void getNewUavTraffic(int s, bool k = false);
 	
 	/** Removes UAVs from the domain which have reached their destination. */
   virtual void absorbUavTraffic();

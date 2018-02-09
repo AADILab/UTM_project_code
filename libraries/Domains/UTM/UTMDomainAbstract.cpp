@@ -16,7 +16,9 @@ UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, std::string costmode, b
   IDomainStateful() {
   initializeBase(configs);
 
-  uav_count = 0;
+//  uav_count = 0;
+  mission_count = 0 ;
+  completed_count = 0 ;
 
   max_action = DBL_MIN;
   min_action = DBL_MAX;
@@ -190,7 +192,7 @@ UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, std::string costmode, b
   
   
   // Sector/Fix  construction
-  uav_count = 0;
+//  uav_count = 0; // repeated from line 19
   vector<vector<size_t> > connections(k_num_sectors_);
   for (edge e : edges)
     connections[e.first].push_back(e.second);
@@ -221,6 +223,7 @@ UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, std::string costmode, b
   // not used?
   trafficGenerated = matrix2d(k_num_sectors_, matrix1d(k_num_sectors_, 0.0));
 
+  // Start with UAVs if given initial UAV poses
   k_position_mode_ = configs["modes"]["position"].as<string>();
   if (k_position_mode_ == "constant") {
     // Create uavs_ on links_
@@ -229,7 +232,12 @@ UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, std::string costmode, b
 
     for (size_t i = 0; i < poses.size(); i++) {
       // only reset count on the first one
-      getNewUavTraffic(poses[i][0]);
+      if (k_disposal_mode_ == "keep") {
+        getNewUavTraffic(poses[i][0], true);
+      }
+      else{
+        getNewUavTraffic(poses[i][0]);
+      }
     }
   }
 
@@ -250,19 +258,19 @@ UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, std::string costmode, b
     
   // Start with UAVs
   // For experiments carried out by Brandon, below code block not used (disposal mode never set to "keep")
-  if (k_disposal_mode_ == "keep") {
-    if (k_position_mode_ == "constant" && poses.size() == 0) {
-      string pose_file = domain_dir + "initial_pose.csv";
-      poses = cio::read2<int>(pose_file);
-      for (size_t i = 0; i < poses.size(); i++) {
-        getNewUavTraffic(poses[i][0]);
-      }
-    } else {
-      for (size_t i = 0; i < sectors_.size(); i++) {
-        getNewUavTraffic(i);
-      }
-    }
-  }
+//  if (k_disposal_mode_ == "keep") {
+//    if (k_position_mode_ == "constant" && poses.size() == 0) {
+//      string pose_file = domain_dir + "initial_pose.csv";
+//      poses = cio::read2<int>(pose_file);
+//      for (size_t i = 0; i < poses.size(); i++) {
+//        getNewUavTraffic(poses[i][0]);
+//      }
+//    } else {
+//      for (size_t i = 0; i < sectors_.size(); i++) {
+//        getNewUavTraffic(i);
+//      }
+//    }
+//  }
 
   /* For experiments carried out by Brandon, agents use G as their reward with no approximations.
    Therefore, code block below doesn't matter */
@@ -365,8 +373,9 @@ double UTMDomainAbstract::getPerformance() {
 matrix1d UTMDomainAbstract::getRewards() {
   double G_actual = getPerformance();
 //  std::cout << "G_actual: " << G_actual ;
-  // JJC: edit here to normalize by number of uavs generated in system that reached destination
-  G_actual /= (uav_count - uavs_.size()) ;
+  // JJC: edit here to normalize by number of completed missions (e.g. uavs generated in system that reached destination)
+//  G_actual /= (uav_count - uavs_.size()) ;
+  G_actual /= (completed_count) ;
 //  std::cout << ", normalized according to #UAVs: " << G_actual << "\n" ;
   if (k_reward_mode_ == "global") {
     return matrix1d(k_num_agents_, G_actual);
@@ -497,8 +506,10 @@ double UTMDomainAbstract::simulateStep(matrix2d agent_actions) {
   // Make uavs_ reach their destination
   absorbUavTraffic();
 
-  // Note: this adds to traffic
-  this->getNewUavTraffic();
+  if (k_disposal_mode_ != "keep"){ // Only generate new traffic if not in "keep" mode
+    // Note: this adds to traffic
+    this->getNewUavTraffic();
+  }
 
   // Plan over new cost maps
   if (action_changed && D_star) {
@@ -516,7 +527,8 @@ double UTMDomainAbstract::simulateStep(matrix2d agent_actions) {
 
 	if (tracking)
 		// Give tracker info on states, actions, weights, waiting UAVs, and total UAV count
-		tracker->stepUpdate(getStates(), agent_actions, w, uavs_, wait, uav_count);
+//		tracker->stepUpdate(getStates(), agent_actions, w, uavs_, wait, uav_count);
+		tracker->stepUpdate(getStates(), agent_actions, w, uavs_, wait, mission_count);
 	
   if (k_reward_mode_ != "global") {
     for (size_t i = 0; i < G_t.size(); i++) {
@@ -584,7 +596,8 @@ void UTMDomainAbstract::reset() {
   min_action = DBL_MAX;
   //nn_states_saved = matrix3d(k_num_steps_, matrix2d(k_num_agents_));
 //  std::printf("%i uavs in uavs_, %i uavs according to uav_count\n", uavs_.size(), uav_count);
-  std::printf("%i / %i reached destination\n", (uav_count - uavs_.size()), uav_count);
+//  std::printf("%i / %i reached destination\n", (uav_count - uavs_.size()), uav_count);
+  std::printf("%i / %i reached destination\n", completed_count, mission_count);
   while (!uavs_.empty()) {
     delete uavs_.back();
     uavs_.pop_back();
@@ -601,25 +614,28 @@ void UTMDomainAbstract::reset() {
   for (size_t i = 0; i < sectors_.size(); i++) {
     sectors_[i]->reset();
   }
+	
+	// Start over with UAV count
+//	uav_count = 0;
+	mission_count = 0 ;
+	completed_count = 0 ;
 
   if (k_disposal_mode_ == "keep") {
-    if (k_position_mode_ == "constant" && poses.size() == 0) {
+    if (k_position_mode_ == "constant"){// && poses.size() == 0) {
       string pose_file = domain_dir + "initial_pose.csv";
       poses = cio::read2<int>(pose_file);
       for (size_t i = 0; i < poses.size(); i++) {
-        getNewUavTraffic(poses[i][0]);
+//        std::cout << "Generating UAV at sector: " << poses[i][0] << "\n" ;
+        getNewUavTraffic(poses[i][0],true);
       }
     } else {
       for (size_t i = 0; i < sectors_.size(); i++) {
-        getNewUavTraffic(i);
+        getNewUavTraffic(i,true);
       }
     }
   }
 
 	//resetUavNums = true;
-	
-	// Start over with UAV count
-	uav_count = 0;
 	// Reset other counters
 	delays = 0;
 	ground_hold = 0;
@@ -635,16 +651,22 @@ void UTMDomainAbstract::absorbUavTraffic() {
 
     // check - done travelling, on terminal link
     if (!u->travelling() && u->terminal()) {
+      completed_count++ ;
       if (k_disposal_mode_ == "keep") {
         auto cur_sector = u->getCurEdge().second;
-        // generates new path
-        sectors_.at(cur_sector)->remake(u);
-        auto new_cur_link = getNthLink(u, 0);
-        auto success = new_cur_link->grab(u, cur_link);
-        if (!success) {
-          u->planAbstractPath();  // option to replan if link blocked
-        }
-        it++;
+        // JJC: hack to keep UAVs in system, first remove UAV and then generate a new UAV in its place, this avoids the backlog problem where UAVs continue to count towards previous link and the system gets stuck since it requires simultaneous link switching
+//        // generates new path
+//        sectors_.at(cur_sector)->remake(u);
+//        mission_count++ ;
+//        auto new_cur_link = getNthLink(u, 0);
+//        auto success = new_cur_link->grab(u, cur_link);
+//        if (!success) {
+//          u->planAbstractPath();  // option to replan if link blocked
+//        }
+        cur_link->remove(u);
+        it = uavs_.erase(it) ;
+        delete u ;
+        getNewUavTraffic(cur_sector,true) ;
       } else {
         // Remove
         cur_link->remove(u);
@@ -657,15 +679,17 @@ void UTMDomainAbstract::absorbUavTraffic() {
   }
 }
 
-void UTMDomainAbstract::getNewUavTraffic(int s) {
-  sectors_.at(s)->generateUavs(T->step, &uav_count);
+void UTMDomainAbstract::getNewUavTraffic(int s, bool k) {
+//  sectors_.at(s)->generateUavs(T->step, &uav_count, k);
+  sectors_.at(s)->generateUavs(T->step, &mission_count, k);
 }
 
 void UTMDomainAbstract::getNewUavTraffic() {
   // Generates (with some probability) plane traffic for each generation sector
 	std::vector<size_t> num_generated(k_num_sectors_, 0); // keeps track of how many UAVs a sector generates
   for (size_t s : generation_sectors) {
-	  num_generated[s] = sectors_.at(s)->generateUavs(T->step, &uav_count); // adding uavs pushed to later; this just populates a wait list
+//	  num_generated[s] = sectors_.at(s)->generateUavs(T->step, &uav_count); // adding uavs pushed to later; this just populates a wait list
+	  num_generated[s] = sectors_.at(s)->generateUavs(T->step, &mission_count); // adding uavs pushed to later; this just populates a wait list
   }
 	if (k_record_) // if recording enabled...
 		tracker->updateGenUavs(num_generated); // record how many UAVs
@@ -699,8 +723,10 @@ matrix1d UTMDomainAbstract::getExtraInfo() {
 		info.push_back(moving);
 		info.push_back(delays);
 		info.push_back(ground_hold);
-		info.push_back(uav_count);
-		info.push_back(uav_count - uavs_.size()) ;
+		info.push_back(mission_count); // total number of assigned missions throughout epoch
+		info.push_back(completed_count) ; // number of successfully completed missions
+//		info.push_back(uav_count); // total number of assigned missions throughout epoch
+//		info.push_back(uav_count - uavs_.size()) ; // number of successfully completed missions
 	}
 	return info;
 }
