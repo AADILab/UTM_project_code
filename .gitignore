@@ -1,7 +1,5 @@
-*.csv
-
 # Ignore build and doc folders
-build
+build*
 html
 
 # Ignore Emacs droppings
