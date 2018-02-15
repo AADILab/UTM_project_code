@@ -12,9 +12,9 @@ modes:
  disposal: keep             # keep, trash
  types: false               # false -- don't use type, true -- do use types
  numbered_domain: false     # true, false
- destinations: static       # random, static
- destination: list           # all, list
- generation: list            # all, list
+ destinations: random       # random, static
+ destination: all           # all, list
+ generation: all            # all, list
  capacity: list             # flat, list
  travel_time: euclidean          # euclidean, list
  state: traffic             # traffic -- state is only traffic thru link, incoming -- traffic + incomming uavs from other links as second state
@@ -48,13 +48,13 @@ approximator:
   output: 1
 
 time:
- epochs: 100
+ epochs: 200
  trials: 1
- steps: 100
- runs: 6
+ steps: 200
+ runs: 20
 
 constants:
- sectors: 11
+ sectors: 9
  alpha: 8.4852813742385702928101323452582
  capacity: 2
 # vehicles: 10
