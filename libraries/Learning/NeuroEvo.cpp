@@ -102,7 +102,7 @@ void random_shuffle(list<NeuralNet*> *L) {
   copy(tmp.begin(), tmp.end(), L->begin());
 }
 
-void NeuroEvo::selectSurvivors() {
+void NeuroEvo::selectSurvivors(bool sh) {
   // Select neural networks with the HIGHEST FITNESS
   population_.sort(NNCompare);  // Sort by the highest fitness
   size_t nExtraNN = population_.size() - k_population_size_;
@@ -110,7 +110,8 @@ void NeuroEvo::selectSurvivors() {
     delete population_.back();
     population_.pop_back();
   }
-  random_shuffle(&population_);
+  if (sh) // don't shuffle on the last epoch
+    random_shuffle(&population_);
 
   pop_new.clear();
   for (auto pop : population_) {

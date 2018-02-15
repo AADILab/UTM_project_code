@@ -27,7 +27,7 @@ class Evolution : public IAgent<Policy> {
       pop_member_active_++;
       this->setPolicy(*pop_member_active_);
     }
-    virtual void selectSurvivors() = 0;
+    virtual void selectSurvivors(bool sh) = 0;
     void update(const Reward &rwd) { this->policy->update(rwd); }
     void setFirstMember() {
       pop_member_active_ = this->population_->begin();

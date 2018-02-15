@@ -249,7 +249,10 @@ void SimNE::epoch() {
   
 	T->eval = 0;
 	evaluations.push_back(MAS->get_evals());
-	MAS->select_survivors();
+	if (T->epoch == T->MAX_EPOCH-1)
+	  MAS->select_survivors(false); // don't shuffle on last epoch
+	else
+  	MAS->select_survivors(); // populations get shuffled here
   survivor_persistence.push_back(MAS->get_survivor_persistence());
 	mutation_difference.push_back(MAS->get_msds());
 	weight_ranges.push_back(MAS->get_ranges());
@@ -418,7 +421,7 @@ bool SimNE::accounting::update(const vector<double> &R, const double &perf, int 
 
 void SimNE::accounting::update_extra(const matrix2d &extra, const matrix2d &extraExtra, size_t eval) {
 	//
-	// EXTREMELEY hacky, sorry I need results...
+	// EXTREMELY hacky, sorry I need results...
 	//
 	//cio::print2(extra, "extra_eval_" + std::to_string(eval) + ".csv");
 	if (best_update && extra.size()) {
@@ -432,6 +435,7 @@ void SimNE::accounting::update_extra(const matrix2d &extra, const matrix2d &extr
 		sum_extra[extra[0].size() - 1] = extra[i-1][extra[0].size() - 1]; // UAVs that reached destination
 		
 		best_extra = sum_extra;
+		best_extra.push_back(best_perf_idx) ;
 		best_extra_extra = extraExtra;
 	}
 	best_update = false;

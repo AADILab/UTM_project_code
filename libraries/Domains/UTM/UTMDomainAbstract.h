@@ -55,9 +55,10 @@ public:
 
   // Modes/simulation parameters
   std::string k_generation_mode_; /**< "all" - UAVs generated at all sectors, "list" - UAVs generated at specific sectors */
-  std::string k_destination_mode_;/**< "all" - UAVs' goals can be set to any sector, "list" - UAVs' goals can be set only to specific sectors */
+  std::string k_destination_mode_;/**< "all" - UAVs' goals can be set to any sector, "list" - UAVs' goals can be set only to specific sectors, "p_list" robots alternate between list and \list sectors (for warehouse experiments) */
   std::vector<size_t> generation_sectors; /**< sectors where UAVs may be generated */
   std::vector<size_t> destination_sectors; /**< goal sectors for the UAVs */
+  std::vector<size_t> paired_destination_sectors; /**< goal sectors for paired robots (warehouse experiments) */
   std::string k_reward_mode_;
   bool k_extra_info_; /**< If we're recording extra information or not (delays, moving time, ground hold time) */
   std::string k_agent_type_; // JJC: for comparative experiments

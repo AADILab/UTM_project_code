@@ -43,10 +43,10 @@ void MultiagentNE::generate_new_members() {
   }
 }
 
-void MultiagentNE::select_survivors() {
+void MultiagentNE::select_survivors(bool sh) {
   // Specific to Evo: select survivors
   for (size_t i = 0; i < agents.size(); i++) {
-    reinterpret_cast<NeuroEvo*>(agents[i])->selectSurvivors();
+    reinterpret_cast<NeuroEvo*>(agents[i])->selectSurvivors(sh);
   }
 }
 

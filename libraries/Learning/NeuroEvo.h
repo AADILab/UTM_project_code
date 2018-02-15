@@ -25,7 +25,7 @@ class NeuroEvo : public Evolution<NeuralNet> {
     //! Mutators
     void generateNewMembers();
     bool selectNewMember();
-    void selectSurvivors();
+    void selectSurvivors(bool sh = true);
     void updatePolicyValues(double R);
     void load(std::string filein);
 

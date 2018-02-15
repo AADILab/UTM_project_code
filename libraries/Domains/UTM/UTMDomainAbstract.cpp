@@ -188,11 +188,16 @@ UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, std::string costmode, b
     for (size_t i = 0; i < destfile.size(); i++) {
       destination_sectors.push_back(destfile[i][0]);
     }
+    if (k_destination_mode_ == "p_list"){
+      for (size_t i = 0; i < k_num_sectors_; i++) 
+        for (size_t j = 0; j < destination_sectors.size(); j++)
+          if (i != j)
+            paired_destination_sectors.push_back(i) ;
+    }
   }
   
   
   // Sector/Fix  construction
-//  uav_count = 0; // repeated from line 19
   vector<vector<size_t> > connections(k_num_sectors_);
   for (edge e : edges)
     connections[e.first].push_back(e.second);
@@ -202,9 +207,32 @@ UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, std::string costmode, b
     // Only include non-self as destination
     //vector<size_t> dest_IDs(destination_sectors.size()-1);
 	  vector<size_t> dest_IDs;
-    for (size_t j = 0; j < destination_sectors.size(); j++) {
+    if (k_destination_mode_ == "p_list"){ // check if current sector is in destination list or not
+      bool in_dest = false ;
+      for (size_t j = 0; j < destination_sectors.size(); j++){
+        if (destination_sectors[j] == i){
+          in_dest = true ;
+          break ;
+        }
+      }
+      if (in_dest){ // if it is one of the destination sectors, it will always assign to a paired sector
+        for (size_t j = 0; j < paired_destination_sectors.size(); j++) {
+          if (paired_destination_sectors[j] == i) continue;
+          dest_IDs.push_back(paired_destination_sectors[j]);
+        }
+      }
+      else{ // if it is not one of the destination sectors, it will always assign to a destination sector
+        for (size_t j = 0; j < destination_sectors.size(); j++) {
+          if (destination_sectors[j] == i) continue;
+          dest_IDs.push_back(destination_sectors[j]);
+        }
+      }
+    }
+    else{
+      for (size_t j = 0; j < destination_sectors.size(); j++) {
         if (destination_sectors[j] == i) continue;
         dest_IDs.push_back(destination_sectors[j]);
+      }
     }
 
     Sector* s = new Sector(sector_locs[i], i, connections[i], sector_locs, configs, i, high_graph_, dest_IDs);

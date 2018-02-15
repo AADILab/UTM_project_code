@@ -17,7 +17,7 @@ class MultiagentNE : public IMultiagentSystem<NeuroEvo> {
 	  
 	  matrix1d get_team_member_ids();
     void generate_new_members();
-    virtual void select_survivors();
+    virtual void select_survivors(bool sh = true);
     virtual bool set_next_pop_members();
     std::vector<double> get_survivor_persistence() {
       std::vector<double> sp(agents.size());
