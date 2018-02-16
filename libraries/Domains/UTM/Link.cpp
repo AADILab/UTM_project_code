@@ -13,9 +13,9 @@ using std::greater;
 //  cumulative_(cumulative), delays(0), not_accepted(0)
 //{}
 
-Link::Link(size_t id, size_t source, size_t target, size_t time,
+Link::Link(size_t id, bool pred, size_t source, size_t target, size_t time,
   size_t capacity, size_t cardinal_dir, size_t window_size, bool cumulative = false, size_t cost) :
-  k_id_(id), k_source_(source), k_target_(target), time_(time), cost_(cost),
+  k_id_(id), k_include_predicted_(pred), k_source_(source), k_target_(target), time_(time), cost_(cost),
   k_cardinal_dir_(cardinal_dir), k_capacity_(capacity),
   k_window_size_(window_size), traffic_(list<UAV*>()),
   cumulative_(cumulative), delays(0), not_accepted(0)
@@ -54,35 +54,39 @@ int Link::numOverCapacity() {
 }
 
 double Link::predictedTraversalTime() {
-  // JJC: no predicted time, only use known cost
-  return time_ + cost_ ;
-  // Get predicted wait time for each type of UAV
-//  double predicted = 0;
-//  
-//  // Collect wait times on all UAVs ON the link
-//  matrix1d waits;
-//  for (UAV* u : traffic_) {
-//    waits.push_back(u->getWait());
-//  }
+  if (k_include_predicted_){
+    // Get predicted wait time for each type of UAV
+    double predicted = 0;
+    
+    // Collect wait times on all UAVs ON the link
+    matrix1d waits;
+    for (UAV* u : traffic_) {
+      waits.push_back(u->getWait());
+    }
 
-//  // Sort by wait (descending)
-//  sort(waits.begin(), waits.end(), greater<double>());
+    // Sort by wait (descending)
+    sort(waits.begin(), waits.end(), greater<double>());
 
-//  int n_ok = k_capacity_ - 1;  // UAVs you don't have to wait for
-//  int n_wait = waits.size() - n_ok;  // UAVs before you in line
-//  for (int i = 0; i < (n_wait - n_ok); i++) {
-//    waits.pop_back();
-//  }
+    int n_ok = k_capacity_ - 1;  // UAVs you don't have to wait for
+    int n_wait = waits.size() - n_ok;  // UAVs before you in line
+    for (int i = 0; i < (n_wait - n_ok); i++) {
+      waits.pop_back();
+    }
 
-//  // Store predicted link time.
-//  double w = easymath::sum(waits);
-////  predicted = time_ + w;
-//  predicted = time_ + cost_ + w ; // cost = 0 if agent_type is not fixed
-//  if (w < 0) {
-//    printf("bad");
-//  }
+    // Store predicted link time.
+    double w = easymath::sum(waits);
+  //  predicted = time_ + w;
+    predicted = time_ + cost_ + w ; // cost = 0 if agent_type is not fixed
+    if (w < 0) {
+      printf("bad");
+    }
 
-//  return predicted;
+    return predicted;
+    }
+  else{
+    // JJC: no predicted time, only use known cost
+    return time_ + cost_ ;
+  }
 }
 
 bool Link::grab(UAV* u, Link* l) {
@@ -215,8 +219,8 @@ void Link::slideWindow() {
 	}
 }
 
-LinkAgent::LinkAgent(size_t num_edges, vector<Link*> links, size_t num_state_elements) :
-  k_num_edges_(num_edges), IAgentBody(links.size(), num_state_elements), links_(links){
+LinkAgent::LinkAgent(size_t num_edges, vector<Link*> links, size_t num_state_elements, bool learn) :
+  k_num_edges_(num_edges), k_output_(learn), IAgentBody(links.size(), num_state_elements), links_(links){
 	for (size_t i = 0; i < links.size(); i++) {
     k_link_ids_.insert(std::make_pair(std::make_pair(links[i]->k_source_, links[i]->k_target_), i));
 
@@ -237,8 +241,7 @@ matrix1d LinkAgent::actionsToWeights(matrix2d agent_actions) {
 
   for (size_t i = 0; i < k_num_edges_; i++) {
     double predicted = links_.at(i)->predictedTraversalTime();
-    if (agent_actions[i][0]>0)
-//        weights[i] = predicted ;
+    if (agent_actions[i][0]>0 && k_output_)
         weights[i] = predicted + agent_actions[i][0] * k_alpha_; // only one action
     else
         weights[i] = predicted;

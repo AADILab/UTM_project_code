@@ -13,8 +13,8 @@ modes:
  types: false               # false -- don't use type, true -- do use types
  numbered_domain: false     # true, false
  destinations: random       # random, static
- destination: p_list        # all, list, p_list (paired list for warehouse experiments)
- generation: all            # all, list
+ destination: list          # all, list, p_list (paired list for warehouse experiments)
+ generation: list           # all, list
  capacity: list             # flat, list
  travel_time: euclidean     # euclidean, list
  state: traffic             # traffic -- state is only traffic thru link, incoming -- traffic + incomming uavs from other links as second state
@@ -22,6 +22,8 @@ modes:
  tracking_type: first_last # all -- store all epochs, first_last -- store first and last epochs of final stat run [ONLY READ IN IF "tracking: true"]
  window_mode: variable 	# cumulative (window_size = steps), variable (window_size specified below)
  agent_type: dynamic        # fixed cost agent uses tolls defined in costs.csv, dynamic agent does not
+ output: learn              # learn, output agent costs; known, output known costs
+ predicted: exclude         # include, exclude predicted costs
 neuroevo:
  popsize: 10
  nn:
@@ -48,13 +50,13 @@ approximator:
   output: 1
 
 time:
- epochs: 500
+ epochs: 200
  trials: 1
  steps: 200
- runs: 1
+ runs: 20
 
 constants:
- sectors: 9
+ sectors: 11
  alpha: 8.4852813742385702928101323452582
  capacity: 2
 # vehicles: 10

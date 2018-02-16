@@ -114,7 +114,10 @@ protected:
   std::string k_objective_mode_, /**< Objective that the agents try to learn to optimize */
 	k_agent_mode_, /**< "link" - agents are links and control edge costs;
 				        "sector" - agents are sectors and control cost to travel in a particular direction */
-	k_disposal_mode_; /**< Whether or not UAVs get absorbed once they reach their goals ("trash"), or if they remain ("keep") */
+	k_disposal_mode_, /**< Whether or not UAVs get absorbed once they reach their goals ("trash"), or if they remain ("keep") */
+	k_output_, /* Whether to use learning "learned", or not "known" */
+	k_pred_; /* Whether or not to include expected costs (due to other traffic in the system) */
+	
   std::vector<Sector*> sectors_;
   std::vector<std::vector<int> > poses;
   std::list<UAV*> uavs_; /**< All UAVs currently in the domain */

@@ -28,7 +28,7 @@ class Link {
 //    Link(size_t id, size_t source, size_t target, size_t time,
 //         size_t capacity, size_t cardinal_dir, size_t window_size, bool cumulative);
     // JJC: new constructor for comparative experiments
-    Link(size_t id, size_t source, size_t target, size_t time,
+    Link(size_t id, bool pred, size_t source, size_t target, size_t time,
          size_t capacity, size_t cardinal_dir, size_t window_size, bool cumulative, size_t cost = 0);
 
     std::vector<Link*> k_connections_; /**< all links that connect to this link */
@@ -49,6 +49,9 @@ class Link {
     
     /** Initialize link historical data structures (for "incoming" state rep only) */
     void initHist();
+    
+    /* Whether or not to include expected costs (due to other traffic in the system) */
+    const bool k_include_predicted_ ;
 
     /** Returns the predicted amount of time it would take to cross the link if 
 		the UAV got there immediately */
@@ -118,11 +121,14 @@ class Link {
 class LinkAgent : public IAgentBody {
   public:
     /** The agent that communicates with others */
-    LinkAgent(size_t num_edges, std::vector<Link*> links, size_t num_state_elements);
+    LinkAgent(size_t num_edges, std::vector<Link*> links, size_t num_state_elements, bool learn);
     virtual ~LinkAgent() {}
     // weights are ntypesxnagents
 
     const size_t k_num_edges_;
+
+    /* Whether to use learning [true], or not [false] */
+    bool k_output_ ;
 	
     /**
     * Translates the output of a neural network into costs applied to a link.

@@ -59,6 +59,8 @@ UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, std::string costmode, b
   k_capacity_mode_ = configs["modes"]["capacity"].as<string>();
   k_agent_type_ = configs["modes"]["agent_type"].as<string>();
   k_travel_time_ = configs["modes"]["travel_time"].as<string>();
+  k_output_ = configs["modes"]["output"].as<string>() ;
+  k_pred_ = configs["modes"]["predicted"].as<string>() ;
 
   // Pointer to tracker
   tracker = new UTMTracker(T, getNumAgents(), k_num_sectors_);
@@ -269,12 +271,17 @@ UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, std::string costmode, b
     }
   }
 
+  
   /* Generate sector/link agents */
+  bool learn = false ;
+  if (k_output_ == "learn")
+    learn = true ;
+    
   if (k_agent_mode_ == "sector") {
     agents_ = new SectorAgent(links_, sectors_, k_num_states_);
     k_num_agents_ = sectors_.size();
   } else {
-    agents_ = new LinkAgent(links_.size(), links_, k_num_states_);
+    agents_ = new LinkAgent(links_.size(), links_, k_num_states_, learn);
     k_num_agents_ = links_.size();
   }
   //num_uavs_at_sector_ = zeros(k_num_sectors_);
@@ -363,8 +370,12 @@ void UTMDomainAbstract::addLink(edge e, size_t flat_capacity, size_t cost, int d
     dist = dist_e ;
   if (dist == 0)
     dist = 1;
+  
+  bool pred = false ;
+  if (k_pred_ == "include")
+    pred = true ;
 
-  Link* newLink = new Link(links_.size(), source, target, dist,
+  Link* newLink = new Link(links_.size(), pred, source, target, dist,
 	static_cast<size_t>(flat_capacity), cardinal_dir, k_window_size_, k_window_mode_ == "cumulative", cost);
   links_.push_back(newLink); // add link to list of all links
 
