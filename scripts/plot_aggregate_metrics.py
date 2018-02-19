@@ -16,6 +16,8 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     agg = pd.read_csv(sys.argv[1])
+
+    # Plot times
     colors = {'ground_hold':'k','delay':'r','moving':'b'}
     for key in colors.keys():
         plt.errorbar(agg.epoch, agg[key+'_mean'], yerr=agg[key+'_std'], fmt=colors[key])
@@ -23,5 +25,12 @@ if __name__ == '__main__':
     plt.xlabel('Epoch')
     plt.ylabel('Time/steps')
     plt.legend(colors.keys(),loc='lower center')
+
+    # Plot cost
+    plt.figure()
+    plt.errorbar(agg.epoch, agg['cost_mean'], yerr=agg['cost_std'], fmt='b')
+    plt.xlabel('Epoch')
+    plt.ylabel('Cost')
+    plt.title('Cost = total travel time/number of completed missions')
     plt.show()
 

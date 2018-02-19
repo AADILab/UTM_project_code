@@ -26,7 +26,10 @@ if __name__ == '__main__':
     data = dict([['moving', pd.DataFrame(columns=range(num_runs))],
                  ['delay', pd.DataFrame(columns=range(num_runs))],
                  ['ground_hold', pd.DataFrame(columns=range(num_runs))],
-                 ['total_travel', pd.DataFrame(columns=range(num_runs))]])
+                 ['total_travel', pd.DataFrame(columns=range(num_runs))],
+                 ['assigned_missions', pd.DataFrame(columns=range(num_runs))],
+                 ['completed_missions', pd.DataFrame(columns=range(num_runs))],
+                 ['cost', pd.DataFrame(columns=range(num_runs))]])
 
     # Read metrics files for all runs
     # Each metric is read into a separate data frame
@@ -36,6 +39,9 @@ if __name__ == '__main__':
         data['delay'][run] = data_run[1]
         data['ground_hold'][run] = data_run[2]
         data['total_travel'][run] = data_run[0] + data_run[1] + data_run[2]
+        data['assigned_missions'][run] = data_run[3]
+        data['completed_missions'][run] = data_run[4]
+        data['cost'][run] = data['total_travel'][run] / data['completed_missions'][run] 
 
     aggregate = pd.DataFrame(columns=map(lambda s: s+'_mean',data.keys())
                              +map(lambda s: s+'_std', data.keys()))
