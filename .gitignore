@@ -1,7 +1,5 @@
-*.csv
-
 # Ignore build, Results and doc folders
-build
+build*
 Results
 html
 

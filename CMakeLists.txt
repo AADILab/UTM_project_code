@@ -42,11 +42,15 @@ file(COPY Domains DESTINATION ${CMAKE_BINARY_DIR})
 # to the "installation" directory
 # This will only work on systems that support symlinks,
 # i.e, unix-like systems.
-ADD_CUSTOM_TARGET(symlink_scripts ALL
-                                  COMMAND ${CMAKE_COMMAND} -E
-                                  create_symlink
-                                  ${CMAKE_SOURCE_DIR}/scripts/summarize.py
-                                  ${CMAKE_BINARY_DIR}/summarize.py)
+set ( SCRIPTS aggregate_metrics.py
+              plot_aggregate_metrics.py )
+foreach(script ${SCRIPTS})
+  ADD_CUSTOM_TARGET(symlink_${script} ALL
+                                      COMMAND ${CMAKE_COMMAND} -E
+                                      create_symlink
+                                      ${CMAKE_SOURCE_DIR}/scripts/${script}
+                                      ${CMAKE_BINARY_DIR}/${script})
+endforeach()
 
 # Create the neural_nets directory
 # If not present, a bunch of errors are printed:
