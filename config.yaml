@@ -16,7 +16,7 @@ modes:
  destination: list          # all, list, p_list (paired list for warehouse experiments)
  generation: list           # all, list
  capacity: list             # flat, list
- travel_time: euclidean     # euclidean, list
+ travel_time: list          # euclidean, list
  state: traffic             # traffic -- state is only traffic thru link, incoming -- traffic + incomming uavs from other links as second state
  tracking: true            # true, false
  tracking_type: first_last # all -- store all epochs, first_last -- store first and last epochs of final stat run [ONLY READ IN IF "tracking: true"]
@@ -56,8 +56,8 @@ time:
  runs: 20
 
 constants:
- sectors: 11
- alpha: 8.4852813742385702928101323452582
+ sectors: 28
+ alpha: 10
  capacity: 2
 # vehicles: 10
  generation_probability: 0.20
