@@ -5,7 +5,7 @@ clear variables ;
 %% UTM team configuration
 run = 0 ;
 best_team = 0 ;
-n_agents = 56 ;
+n_agents = 57 ;
 alpha = 10 ; % from config.yaml file, represents longest link length
 nn_dir = sprintf('./neural_nets/net_%i_',run) ;
 

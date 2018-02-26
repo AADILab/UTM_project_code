@@ -61,7 +61,7 @@ public:
   std::vector<size_t> paired_destination_sectors; /**< goal sectors for paired robots (warehouse experiments) */
   std::string k_reward_mode_;
   bool k_extra_info_; /**< If we're recording extra information or not (delays, moving time, ground hold time) */
-  std::string k_agent_type_; // JJC: for comparative experiments
+  std::string k_cost_type_; // JJC: for experiments with fixed additional costs
   std::string k_travel_time_; // JJC: for listed distances
 
   // Reward
@@ -218,7 +218,7 @@ protected:
 //	void addLink(edge e, double flat_capacity);
 
   // JJC: add links with fixed costs and fixed travel time
-	void addLink(edge e, size_t flat_capacity, size_t cost, int time);
+	void addLink(edge e, size_t flat_capacity, double cost, int time);
 	
   std::string createExperimentDirectory(std::string config_file);
 	

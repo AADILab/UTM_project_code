@@ -14,7 +14,7 @@ using std::greater;
 //{}
 
 Link::Link(size_t id, bool pred, size_t source, size_t target, size_t time,
-  size_t capacity, size_t cardinal_dir, size_t window_size, bool cumulative = false, size_t cost) :
+  size_t capacity, size_t cardinal_dir, size_t window_size, bool cumulative = false, double cost) :
   k_id_(id), k_include_predicted_(pred), k_source_(source), k_target_(target), time_(time), cost_(cost),
   k_cardinal_dir_(cardinal_dir), k_capacity_(capacity),
   k_window_size_(window_size), traffic_(list<UAV*>()),
@@ -75,8 +75,7 @@ double Link::predictedTraversalTime() {
 
     // Store predicted link time.
     double w = easymath::sum(waits);
-  //  predicted = time_ + w;
-    predicted = time_ + cost_ + w ; // cost = 0 if agent_type is not fixed
+    predicted = time_ + cost_ + w ; // cost = 0 if cost_type is not fixed
     if (w < 0) {
       printf("bad");
     }

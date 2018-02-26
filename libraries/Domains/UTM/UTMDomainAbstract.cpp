@@ -57,7 +57,7 @@ UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, std::string costmode, b
   k_window_mode_ = configs["modes"]["window_mode"].as<std::string>();
   k_window_size_ = configs["constants"]["window_size"].as<size_t>();
   k_capacity_mode_ = configs["modes"]["capacity"].as<string>();
-  k_agent_type_ = configs["modes"]["agent_type"].as<string>();
+  k_cost_type_ = configs["modes"]["cost_type"].as<string>();
   k_travel_time_ = configs["modes"]["travel_time"].as<string>();
   k_output_ = configs["modes"]["output"].as<string>() ;
   k_pred_ = configs["modes"]["predicted"].as<string>() ;
@@ -108,10 +108,10 @@ UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, std::string costmode, b
 	bool isLoopConstruct = false ;
 	size_t loopSize = 0 ;
 	size_t cap_e = 0 ;
-	size_t cost_e = 0 ;
+	double cost_e = 0.0 ;
 	int dist_e = -1 ;
 	vector<vector<size_t>> capfile ;
-	vector<vector<size_t>> costfile ;
+	vector<vector<double>> costfile ;
 	vector<vector<int>> distfile ;
 	
 	if (k_capacity_mode_ == "flat"){ // All links have equal capacity
@@ -122,8 +122,8 @@ UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, std::string costmode, b
 	  isLoopConstruct = true ;
 	  loopSize = capfile.size() ;
   }
-  if (k_agent_type_ == "fixed"){
-		costfile = cio::read2<size_t>(domain_dir + "costs.csv");
+  if (k_cost_type_ == "fixed"){
+		costfile = cio::read2<double>(domain_dir + "costs.csv");
 		isLoopConstruct = true ;
 		loopSize = costfile.size() ;
 	}
@@ -139,7 +139,7 @@ UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, std::string costmode, b
     for (size_t i = 0; i < loopSize; i++) {
       if (k_capacity_mode_ == "list")
         cap_e = capfile[i][0] ;
-      if (k_agent_type_ == "fixed")
+      if (k_cost_type_ == "fixed")
 		    cost_e = costfile[i][0] ;
 	    if (k_travel_time_ == "list")
 	      dist_e = distfile[i][0] ; 
@@ -355,7 +355,7 @@ UTMDomainAbstract::UTMDomainAbstract(YAML::Node configs, std::string costmode, b
 //}
 
 // JJC: comparative experiments with fixed costs
-void UTMDomainAbstract::addLink(edge e, size_t flat_capacity, size_t cost, int dist_e) {
+void UTMDomainAbstract::addLink(edge e, size_t flat_capacity, double cost, int dist_e) {
   size_t source = e.first;   // membership of origin of edge
   size_t target = e.second;  // membership of connected node
   vector<XY> locs = high_graph_->get_locations();

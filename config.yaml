@@ -2,14 +2,14 @@ modes:
  resimulation: no
  fitness: global
  airspace: saved            # saved, generated
- traffic: constant          # deterministic, probabilistic, constant
+ traffic: probabilistic     # deterministic, probabilistic, constant
  prob_record: false         # true, false
- position: constant         # random, constant
+ position: random           # random, constant
  agent: link                # sector, link
  search: astar              # astar, rags, quick
  square: false              # true, false
  objective: travel_time     # delay, conflicts, travel_time
- disposal: keep             # keep, trash
+ disposal: trash            # keep, trash
  types: false               # false -- don't use type, true -- do use types
  numbered_domain: false     # true, false
  destinations: random       # random, static
@@ -18,10 +18,10 @@ modes:
  capacity: list             # flat, list
  travel_time: list          # euclidean, list
  state: traffic             # traffic -- state is only traffic thru link, incoming -- traffic + incomming uavs from other links as second state
- tracking: true            # true, false
- tracking_type: first_last # all -- store all epochs, first_last -- store first and last epochs of final stat run [ONLY READ IN IF "tracking: true"]
- window_mode: variable 	# cumulative (window_size = steps), variable (window_size specified below)
- agent_type: dynamic        # fixed cost agent uses tolls defined in costs.csv, dynamic agent does not
+ tracking: true             # true, false
+ tracking_type: first_last  # all -- store all epochs, first_last -- store first and last epochs of final stat run [ONLY READ IN IF "tracking: true"]
+ window_mode: variable 	    # cumulative (window_size = steps), variable (window_size specified below)
+ cost_type: fixed           # "fixed" uses additional tolls defined in costs.csv, "dynamic" does not
  output: learn              # learn, output agent costs; known, output known costs
  predicted: exclude         # include, exclude predicted costs
 neuroevo:
@@ -57,10 +57,10 @@ time:
 
 constants:
  sectors: 28
- alpha: 10
+ alpha: 357.63              # maximum cost from costs.csv and/or distances.csv
  capacity: 2
 # vehicles: 10
- generation_probability: 0.20
+ generation_probability: 0.5
  generation_rate: 3
 # arrival_threshold: 1
 # conflict_threshold: 1

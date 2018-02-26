@@ -33,10 +33,13 @@ target_link_libraries( AbstractUTMSimulation ${LIBS_TO_LINK} )
 #add_executable(AbstractUTMTesting AbstractUTMTesting.cpp)
 #target_link_libraries( AbstractUTMTesting ${LIBS_TO_LINK} )
 
+# Allow user specified build directory
+set(BUILD_DIR "config" CACHE STRING "User specified directory for current configuration")
+
 # Copy configuration and domain description files
 # to the "installation" (currently build) directory
-file(COPY config.yaml DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY Domains DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY config.yaml DESTINATION ${CMAKE_BINARY_DIR}/${BUILD_DIR})
+file(COPY Domains DESTINATION ${CMAKE_BINARY_DIR}/${BUILD_DIR})
 
 # Symlink the postprocessing scripts
 # to the "installation" directory
@@ -49,10 +52,10 @@ foreach(script ${SCRIPTS})
                                       COMMAND ${CMAKE_COMMAND} -E
                                       create_symlink
                                       ${CMAKE_SOURCE_DIR}/scripts/${script}
-                                      ${CMAKE_BINARY_DIR}/${script})
+                                      ${CMAKE_BINARY_DIR}/${BUILD_DIR}/${script})
 endforeach()
 
 # Create the neural_nets directory
 # If not present, a bunch of errors are printed:
 # "Failed to open neural_nets/net_2_2.csv."
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/neural_nets)
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/${BUILD_DIR}/neural_nets)
