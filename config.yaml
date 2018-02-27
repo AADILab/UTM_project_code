@@ -64,7 +64,7 @@ constants:
  generation_rate: 3
 # arrival_threshold: 1
 # conflict_threshold: 1
- num_generated: 1
+ num_generated: 2
  window_size: 0 # used by links to record how many UAVs passed through which other links; if set to 0, this feature is not used
  xdim: 10
  ydim: 10

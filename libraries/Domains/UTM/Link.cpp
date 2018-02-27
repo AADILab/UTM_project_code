@@ -61,7 +61,7 @@ double Link::predictedTraversalTime() {
     // Collect wait times on all UAVs ON the link
     matrix1d waits;
     for (UAV* u : traffic_) {
-      waits.push_back(u->getWait());
+      waits.push_back(u->getWait()+cost_);
     }
 
     // Sort by wait (descending)
